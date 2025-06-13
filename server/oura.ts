@@ -108,7 +108,40 @@ export class OuraClient {
     if (startDate) params.start_date = startDate;
     if (endDate) params.end_date = endDate;
 
-    return this.makeRequest<{ data: OuraReadinessData[] }>('daily_readiness', params);
+    return this.makeRequest<{ data: OuraReadinessData[] }>('readiness', params);
+  }
+  
+  /**
+   * Test the connection to Oura API using the provided access token
+   * @returns User info or error if connection fails
+   */
+  async testConnection(): Promise<{ userId: string }> {
+    // We'll use the personal info endpoint which is lightweight and always accessible with a valid token
+    const url = 'https://api.ouraring.com/v2/usercollection/personal_info';
+    
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${this.accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Invalid Oura Ring access token');
+        }
+        throw new Error(`Oura API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return { userId: data.id || 'unknown' };
+    } catch (error) {
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error('Failed to connect to Oura Ring API');
+    }
   }
 
   async getLatestSleep(): Promise<OuraSleepData | null> {

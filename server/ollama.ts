@@ -83,6 +83,40 @@ export class OllamaClient {
       return false;
     }
   }
+  
+  /**
+   * Test connection to Ollama API and return model information if successful
+   * @returns Object with connection details and available models
+   */
+  async testConnection(): Promise<{ status: string, models?: Array<{name: string, size: number}> }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/tags`, {
+        method: 'GET',
+        signal: AbortSignal.timeout(5000), // 5 second timeout
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Ollama API error: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      return { 
+        status: 'connected', 
+        models: data.models?.map((model: any) => ({
+          name: model.name,
+          size: model.size,
+        })) || [] 
+      };
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new Error(`Failed to connect to Ollama: ${error.message}`);
+      }
+      throw new Error('Failed to connect to Ollama: Unknown error');
+    }
+  }
 }
 
 export const createOllamaClient = (baseUrl?: string) => {

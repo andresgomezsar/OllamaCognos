@@ -145,6 +145,22 @@ export const aiQueries = pgTable("ai_queries", {
   createdAtIdx: index("ai_queries_created_at_idx").on(table.createdAt),
 }));
 
+// Configuration Management (API Tokens, Endpoints, Integration settings)
+export const configuration = pgTable("configuration", {
+  id: serial("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  value: text("value"),
+  encrypted: boolean("encrypted").default(true).notNull(),
+  category: text("category").notNull(), // 'api', 'endpoint', 'integration'
+  displayName: text("display_name").notNull(),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  keyIdx: index("configuration_key_idx").on(table.key),
+  categoryIdx: index("configuration_category_idx").on(table.category),
+}));
+
 // External Data Sources and Web Search Results
 export const externalData = pgTable("external_data", {
   id: serial("id").primaryKey(),
@@ -174,7 +190,7 @@ export const settings = pgTable("settings", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().unique(),
   ollamaUrl: text("ollama_url").notNull().default("http://localhost:11434"),
-  ollamaModel: text("ollama_model").notNull().default("llama3.2:3b"),
+  ollamaModel: text("ollama_model").notNull().default("llama3.2-vision:latest"),
   ouraToken: text("oura_token"), // Encrypted
   enabledMcpTools: jsonb("enabled_mcp_tools").default(["health-analysis", "memory-store", "web-search"]),
   healthDataSources: jsonb("health_data_sources").default({}),
@@ -358,6 +374,40 @@ export const healthQuerySchema = z.object({
   limit: z.number().optional().default(50),
 });
 
+// Health analysis schema
+export const healthAnalysisSchema = z.object({
+  date: z.string().optional(),
+  dataType: z.string().optional(),
+  userId: z.number().optional(),
+});
+
+// Configuration schemas
+export const configurationSchema = z.object({
+  key: z.string().min(1),
+  value: z.string().optional(),
+  encrypted: z.boolean().default(true),
+  category: z.string().min(1),
+  displayName: z.string().min(1),
+  description: z.string().optional(),
+});
+
+export const configurationUpdateSchema = z.object({
+  key: z.string().min(1),
+  value: z.string().optional(),
+});
+
+export const configurationBulkUpdateSchema = z.array(configurationUpdateSchema);
+
+// Initial configuration schema with all necessary tokens and endpoints
+export const defaultConfigurationSchema = z.object({
+  OURA_TOKEN: z.string().optional(),
+  LIMITLESS_API_TOKEN: z.string().optional(),
+  PERPLEXITY_TOKEN: z.string().optional(), 
+  OPENROUTER_TOKEN: z.string().optional(),
+  OLLAMA_ENDPOINT: z.string().default("http://localhost:11434"),
+  NGROK_ENDPOINT: z.string().optional(),
+});
+
 // Memory query schema
 export const memoryQuerySchema = z.object({
   memoryType: z.enum(['conversation', 'preference', 'insight', 'goal']).optional(),
@@ -367,38 +417,38 @@ export const memoryQuerySchema = z.object({
 });
 
 // Types
-export type InsertUser = z.infer<typeof insertUserSchema>;
+export type InsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 
-export type InsertUserConsent = z.infer<typeof insertUserConsentSchema>;
-export type UserConsent = typeof userConsent.$inferSelect;
-
-export type InsertConversation = z.infer<typeof insertConversationSchema>;
 export type Conversation = typeof conversations.$inferSelect;
+export type InsertConversation = typeof conversations.$inferInsert;
 
-export type InsertMessage = z.infer<typeof insertMessageSchema>;
 export type Message = typeof messages.$inferSelect;
+export type InsertMessage = typeof messages.$inferInsert;
 
-export type InsertHealthData = z.infer<typeof insertHealthDataSchema>;
 export type HealthData = typeof healthData.$inferSelect;
+export type InsertHealthData = typeof healthData.$inferInsert;
 
-export type InsertMemory = z.infer<typeof insertMemorySchema>;
-export type Memory = typeof memories.$inferSelect;
-
-export type InsertAiQuery = z.infer<typeof insertAiQuerySchema>;
-export type AiQuery = typeof aiQueries.$inferSelect;
-
-export type InsertExternalData = z.infer<typeof insertExternalDataSchema>;
-export type ExternalData = typeof externalData.$inferSelect;
-
-export type InsertSettings = z.infer<typeof insertSettingsSchema>;
 export type Settings = typeof settings.$inferSelect;
+export type InsertSettings = typeof settings.$inferInsert;
+
+export type Memory = typeof memories.$inferSelect;
+export type InsertMemory = typeof memories.$inferInsert;
+
+export type AiQuery = typeof aiQueries.$inferSelect;
+export type InsertAiQuery = typeof aiQueries.$inferInsert;
+
+export type UserConsent = typeof userConsent.$inferSelect;
+export type InsertUserConsent = typeof userConsent.$inferInsert;
+
+export type AuditLog = typeof auditLog.$inferSelect;
+export type InsertAuditLog = typeof auditLog.$inferInsert;
+
+export type Configuration = typeof configuration.$inferSelect;
+export type InsertConfiguration = typeof configuration.$inferInsert;
 
 export type InsertSystemMetrics = z.infer<typeof insertSystemMetricsSchema>;
 export type SystemMetrics = typeof systemMetrics.$inferSelect;
-
-export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
-export type AuditLog = typeof auditLog.$inferSelect;
 
 export type ChatCompletion = z.infer<typeof chatCompletionSchema>;
 export type HealthQuery = z.infer<typeof healthQuerySchema>;

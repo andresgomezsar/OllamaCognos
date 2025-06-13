@@ -1,5 +1,5 @@
 import { 
-  users, conversations, messages, healthData, settings, memories, aiQueries, userConsent, auditLog,
+  users, conversations, messages, healthData, settings, memories, aiQueries, userConsent, auditLog, configuration,
   type User, type InsertUser,
   type Conversation, type InsertConversation,
   type Message, type InsertMessage,
@@ -8,7 +8,8 @@ import {
   type Memory, type InsertMemory,
   type AiQuery, type InsertAiQuery,
   type UserConsent, type InsertUserConsent,
-  type AuditLog, type InsertAuditLog
+  type AuditLog, type InsertAuditLog,
+  type Configuration, type InsertConfiguration
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, gte, lte, inArray, sql } from "drizzle-orm";
@@ -52,9 +53,13 @@ export interface IStorage {
   getSettings(userId: number): Promise<Settings | undefined>;
   createSettings(settings: InsertSettings): Promise<Settings>;
   updateSettings(userId: number, updates: Partial<Settings>): Promise<Settings | undefined>;
-
-  // Audit Logging
-  logAction(log: InsertAuditLog): Promise<AuditLog>;
+  
+  // Configuration Management
+  getConfiguration(key: string): Promise<Configuration | undefined>;
+  getAllConfiguration(category?: string): Promise<Configuration[]>;
+  setConfiguration(config: InsertConfiguration): Promise<Configuration>;
+  updateConfiguration(key: string, value: string): Promise<Configuration | undefined>;
+  deleteConfiguration(key: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -65,6 +70,9 @@ export class DatabaseStorage implements IStorage {
 
   private async initializeDefaults() {
     try {
+      // Initialize configuration entries if they don't exist
+      await this.initializeConfiguration();
+      
       // Check if default user exists
       const existingUser = await this.getUserByUsername("user");
       if (!existingUser) {
@@ -95,6 +103,74 @@ export class DatabaseStorage implements IStorage {
       }
     } catch (error) {
       console.error("Failed to initialize defaults:", error);
+    }
+  }
+  
+  private async initializeConfiguration() {
+    try {
+      // Define default configuration entries
+      const defaultConfigs: InsertConfiguration[] = [
+        {
+          key: "OURA_TOKEN",
+          value: process.env.OURA_TOKEN || "",
+          encrypted: true,
+          category: "api",
+          displayName: "Oura Ring API Token",
+          description: "API token for accessing Oura Ring data"
+        },
+        {
+          key: "LIMITLESS_API_TOKEN",
+          value: process.env.LIMITLESS_API_TOKEN || "",
+          encrypted: true,
+          category: "api",
+          displayName: "Limitless API Token",
+          description: "API token for accessing Limitless services"
+        },
+        {
+          key: "PERPLEXITY_TOKEN",
+          value: process.env.PERPLEXITY_TOKEN || "",
+          encrypted: true,
+          category: "api",
+          displayName: "Perplexity API Token",
+          description: "API token for Perplexity AI services"
+        },
+        {
+          key: "OPENROUTER_TOKEN",
+          value: process.env.OPENROUTER_TOKEN || "",
+          encrypted: true,
+          category: "api",
+          displayName: "OpenRouter API Token",
+          description: "API token for OpenRouter LLM routing services"
+        },
+        {
+          key: "OLLAMA_ENDPOINT",
+          value: process.env.OLLAMA_ENDPOINT || "http://localhost:11434",
+          encrypted: false,
+          category: "endpoint",
+          displayName: "Ollama Endpoint",
+          description: "URL for local Ollama instance"
+        },
+        {
+          key: "NGROK_ENDPOINT",
+          value: process.env.NGROK_ENDPOINT || "",
+          encrypted: false,
+          category: "endpoint",
+          displayName: "Ngrok Endpoint",
+          description: "Public URL for accessing the application"
+        }
+      ];
+      
+      // Create or update each config entry
+      for (const config of defaultConfigs) {
+        const existing = await this.getConfiguration(config.key);
+        if (!existing) {
+          await this.setConfiguration(config);
+        }
+      }
+      
+      console.log('Configuration initialized');
+    } catch (error) {
+      console.error("Failed to initialize configuration:", error);
     }
   }
 
@@ -270,15 +346,83 @@ export class DatabaseStorage implements IStorage {
 
   async getAiQuery(queryHash: string): Promise<AiQuery | undefined> {
     const [query] = await db.select().from(aiQueries).where(eq(aiQueries.queryHash, queryHash));
-    return query || undefined;
+    return query;
   }
 
   async createAiQuery(query: InsertAiQuery): Promise<AiQuery> {
-    const [newQuery] = await db
-      .insert(aiQueries)
-      .values(query)
+    const [inserted] = await db.insert(aiQueries).values(query).returning();
+    return inserted;
+  }
+  
+  // Configuration Management
+  async getConfiguration(key: string): Promise<Configuration | undefined> {
+    return await db.query.configuration.findFirst({
+      where: eq(configuration.key, key)
+    });
+  }
+
+  async getAllConfiguration(category?: string): Promise<Configuration[]> {
+    if (category) {
+      return await db.query.configuration.findMany({
+        where: eq(configuration.category, category),
+        orderBy: [configuration.category, configuration.key]
+      });
+    }
+    return await db.query.configuration.findMany({
+      orderBy: [configuration.category, configuration.key]
+    });
+  }
+
+  async setConfiguration(config: InsertConfiguration): Promise<Configuration> {
+    // Check if config already exists
+    const existing = await this.getConfiguration(config.key);
+    
+    if (existing) {
+      // Update existing config
+      const [updated] = await db
+        .update(configuration)
+        .set({
+          ...config,
+          updatedAt: new Date()
+        })
+        .where(eq(configuration.key, config.key))
+        .returning();
+      return updated;
+    } else {
+      // Create new config
+      const [created] = await db
+        .insert(configuration)
+        .values(config)
+        .returning();
+      return created;
+    }
+  }
+
+  async updateConfiguration(key: string, value: string): Promise<Configuration | undefined> {
+    const existing = await this.getConfiguration(key);
+    
+    if (!existing) {
+      return undefined;
+    }
+    
+    const [updated] = await db
+      .update(configuration)
+      .set({
+        value,
+        updatedAt: new Date()
+      })
+      .where(eq(configuration.key, key))
       .returning();
-    return newQuery;
+    
+    return updated;
+  }
+
+  async deleteConfiguration(key: string): Promise<boolean> {
+    const result = await db
+      .delete(configuration)
+      .where(eq(configuration.key, key));
+    
+    return !!result;
   }
 
   async getSettings(userId: number): Promise<Settings | undefined> {
