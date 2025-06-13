@@ -1,0 +1,256 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 210 11% 98%; /* #F8FAFC */
+  --foreground: 215 27% 17%; /* #1E293B */
+  --muted: 210 11% 96%; /* #F1F5F9 */
+  --muted-foreground: 215 16% 47%; /* #64748B */
+  --popover: 0 0% 100%; /* #FFFFFF */
+  --popover-foreground: 215 27% 17%; /* #1E293B */
+  --card: 0 0% 100%; /* #FFFFFF */
+  --card-foreground: 215 27% 17%; /* #1E293B */
+  --border: 215 28% 88%; /* #E2E8F0 */
+  --input: 215 28% 88%; /* #E2E8F0 */
+  --primary: 217 91% 60%; /* #3B82F6 */
+  --primary-foreground: 0 0% 100%; /* #FFFFFF */
+  --secondary: 210 11% 96%; /* #F1F5F9 */
+  --secondary-foreground: 215 27% 17%; /* #1E293B */
+  --accent: 210 11% 96%; /* #F1F5F9 */
+  --accent-foreground: 215 27% 17%; /* #1E293B */
+  --destructive: 0 84% 60%; /* #EF4444 */
+  --destructive-foreground: 0 0% 100%; /* #FFFFFF */
+  --ring: 217 91% 60%; /* #3B82F6 */
+  --radius: 0.5rem;
+  
+  /* Cognos brand colors */
+  --cognos-blue: 217 91% 60%; /* #3B82F6 */
+  --cognos-green: 142 76% 36%; /* #10B981 */
+  --cognos-purple: 262 83% 58%; /* #8B5CF6 */
+  --cognos-orange: 25 95% 53%; /* #F59E0B */
+  
+  /* Health data colors */
+  --health-sleep: 262 83% 58%; /* #8B5CF6 */
+  --health-activity: 142 76% 36%; /* #10B981 */
+  --health-heart: 0 84% 60%; /* #EF4444 */
+  --health-hrv: 217 91% 60%; /* #3B82F6 */
+}
+
+.dark {
+  --background: 222 84% 5%; /* #0F0F23 */
+  --foreground: 210 40% 98%; /* #F8FAFC */
+  --muted: 217 33% 17%; /* #1E293B */
+  --muted-foreground: 215 20% 65%; /* #94A3B8 */
+  --popover: 222 84% 5%; /* #0F0F23 */
+  --popover-foreground: 210 40% 98%; /* #F8FAFC */
+  --card: 222 84% 5%; /* #0F0F23 */
+  --card-foreground: 210 40% 98%; /* #F8FAFC */
+  --border: 217 33% 17%; /* #1E293B */
+  --input: 217 33% 17%; /* #1E293B */
+  --primary: 217 91% 60%; /* #3B82F6 */
+  --primary-foreground: 222 84% 5%; /* #0F0F23 */
+  --secondary: 217 33% 17%; /* #1E293B */
+  --secondary-foreground: 210 40% 98%; /* #F8FAFC */
+  --accent: 217 33% 17%; /* #1E293B */
+  --accent-foreground: 210 40% 98%; /* #F8FAFC */
+  --destructive: 0 84% 60%; /* #EF4444 */
+  --destructive-foreground: 210 40% 98%; /* #F8FAFC */
+  --ring: 217 91% 60%; /* #3B82F6 */
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-muted;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-border rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground;
+  }
+}
+
+@layer components {
+  /* Health metric cards */
+  .health-card {
+    @apply bg-gradient-to-br rounded-xl p-4 text-center transition-all duration-200 hover:scale-105;
+  }
+
+  .health-card.sleep {
+    @apply from-purple-50 to-purple-100;
+  }
+
+  .health-card.activity {
+    @apply from-green-50 to-green-100;
+  }
+
+  .health-card.heart {
+    @apply from-red-50 to-red-100;
+  }
+
+  .health-card.hrv {
+    @apply from-blue-50 to-blue-100;
+  }
+
+  /* Chat message animations */
+  .message-enter {
+    @apply opacity-0 transform translate-y-4;
+    animation: message-appear 0.3s ease-out forwards;
+  }
+
+  @keyframes message-appear {
+    to {
+      @apply opacity-100 transform translate-y-0;
+    }
+  }
+
+  /* Typing indicator animation */
+  .typing-dot {
+    @apply w-2 h-2 bg-slate-400 rounded-full;
+    animation: typing-bounce 1.5s infinite;
+  }
+
+  .typing-dot:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+
+  .typing-dot:nth-child(3) {
+    animation-delay: 0.4s;
+  }
+
+  @keyframes typing-bounce {
+    0%, 60%, 100% {
+      transform: translateY(0);
+    }
+    30% {
+      transform: translateY(-10px);
+    }
+  }
+
+  /* Status indicator pulse */
+  .status-pulse {
+    animation: pulse-glow 2s infinite;
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.8;
+      transform: scale(1.1);
+    }
+  }
+
+  /* Custom focus styles for better accessibility */
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background;
+  }
+}
+
+@layer utilities {
+  /* Text gradient utilities */
+  .text-gradient-blue {
+    background: linear-gradient(135deg, hsl(var(--cognos-blue)), hsl(var(--cognos-purple)));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .text-gradient-health {
+    background: linear-gradient(135deg, hsl(var(--health-activity)), hsl(var(--health-sleep)));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Animation utilities */
+  .animate-fade-in {
+    animation: fade-in 0.5s ease-out;
+  }
+
+  .animate-slide-up {
+    animation: slide-up 0.3s ease-out;
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Glassmorphism effect */
+  .glass {
+    backdrop-filter: blur(16px) saturate(180%);
+    background-color: rgba(255, 255, 255, 0.75);
+    border: 1px solid rgba(209, 213, 219, 0.3);
+  }
+
+  .dark .glass {
+    background-color: rgba(17, 24, 39, 0.75);
+    border: 1px solid rgba(75, 85, 99, 0.3);
+  }
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-break {
+    page-break-before: always;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  :root {
+    --border: 0 0% 0%;
+    --primary: 0 0% 0%;
+    --ring: 0 0% 0%;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
