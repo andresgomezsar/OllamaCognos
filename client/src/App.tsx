@@ -56,10 +56,14 @@ function Router() {
   return (
     <Switch>
       <Route path="/login">
-        {isAuthenticated && !loading ? <Redirect to="/" /> : <Login />}
+        {isAuthenticated && !loading ? <Redirect to="/dashboard" /> : <Login />}
       </Route>
       
       <Route path="/">
+        <Redirect to="/dashboard" />
+      </Route>
+
+      <Route path="/dashboard">
         <ProtectedLayout>
           <Dashboard />
         </ProtectedLayout>

@@ -80,22 +80,25 @@ export default function SettingsPage() {
       setTestingOllama(true);
       setOllamaTestResult(null);
       
-      // Test if we can connect to the Ollama server
-      const response = await fetch(`${formData.ollamaUrl}/api/version`, {
-        method: 'GET',
+      // Use our backend proxy to test the Ollama connection
+      const response = await fetch('/api/ollama/test-connection', {
+        method: 'POST',
         headers: {
+          'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
+        body: JSON.stringify({ url: formData.ollamaUrl }),
       });
       
       if (!response.ok) {
-        throw new Error(`Cannot connect to Ollama at ${formData.ollamaUrl}`);
+        throw new Error('Failed to test Ollama connection');
       }
       
-      const data = await response.json();
+      const result = await response.json();
+      
       setOllamaTestResult({
-        success: true,
-        message: `Connected to Ollama ${data.version || 'server'}!`,
+        success: result.success,
+        message: result.message,
       });
     } catch (error) {
       setOllamaTestResult({

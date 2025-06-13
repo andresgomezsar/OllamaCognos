@@ -20,6 +20,8 @@ An advanced Ollama-compatible personal AI assistant that integrates health data 
 - **Web Search**: Real-time information retrieval
 - **Memory Store**: Persistent conversation context
 - **Health Analysis**: Specialized health data processing tools
+- **Smart Routing**: Context-aware tool selection
+- **Modular Architecture**: Server-based MCP implementation
 - **Extensible**: Plugin architecture for custom tools
 
 ### 🔒 Privacy & Security
@@ -49,10 +51,18 @@ An advanced Ollama-compatible personal AI assistant that integrates health data 
 ├── server/                 # Express backend
 │   ├── routes.ts           # API routes and WebSocket handlers
 │   ├── storage.ts          # Database layer
-│   ├── mcp.ts              # MCP tool implementations
+│   ├── mcp/                # Modern MCP implementation
+│   │   ├── mcpRouter.ts    # Modern MCP router and routing service
+│   │   ├── mcpUtils.ts     # MCP utilities and tool execution
+│   │   ├── types.ts        # MCP type definitions
+│   │   ├── oura/           # Oura MCP server implementation
+│   │   │   ├── ouraService.ts  # Oura API client
+│   │   │   ├── interfaces.ts   # Oura data interfaces
+│   │   │   └── tools.ts        # Oura MCP tools
+│   │   └── search/         # Search MCP server implementation
 │   ├── ollama.ts           # Ollama client
 │   ├── openrouter.ts       # OpenRouter client
-│   └── oura.ts             # Oura Ring API client
+│   └── test/               # Test files
 ├── shared/                 # Shared types and schemas
 │   └── schema.ts           # Database schema and validation
 └── components.json         # shadcn/ui configuration
@@ -172,9 +182,17 @@ npm run db:studio      # Open Drizzle Studio
 ```
 
 ### Adding MCP Tools
-1. Implement tool in `server/mcp.ts`
-2. Add to tool registry
-3. Update routing logic in `server/mcpRouter.ts`
+1. Create a new tool class in the appropriate server directory (e.g., `server/mcp/[service]/tools.ts`)
+2. Implement the tool following the MCP Tool interface
+3. Register the tool in `server/mcp/index.ts`
+4. Update contextual pattern matching in `determineEnabledTools` if needed
+
+### MCP Architecture
+- **Server-Based**: Modular MCP servers for different services (Oura, Search, Memory)
+- **Contextual Tool Selection**: Smart pattern matching for relevant tool activation
+- **Streaming Support**: Real-time tool execution results
+- **Error Handling**: Robust error handling and user feedback
+- **Schema Validation**: Automatic validation of tool inputs and outputs
 
 ### Frontend Development
 - Uses shadcn/ui components
@@ -220,6 +238,24 @@ CMD ["npm", "start"]
 ## License
 
 MIT License - see LICENSE file for details
+
+## MCP and AI Model Integration
+
+### Function Calling Architecture
+- **Adapter Pattern**: Translates MCP server tools to Ollama/OpenRouter function calls
+- **Smart Routing**: Context-aware tool selection based on message content
+- **Function Schema**: OpenAI-compatible function calling format
+
+### Workflow
+1. **User Query**: Sent to Ollama/OpenRouter models
+2. **Tool Selection**: Relevant MCP tools activated based on query context
+3. **Function Calling**: AI model invokes appropriate function
+4. **Data Retrieval**: MCP servers retrieve and process data (Oura, Web Search, etc.)
+5. **Response Generation**: AI incorporates tool results into final response
+
+### Supported AI Providers
+- **Ollama**: Local AI with function calling support
+- **OpenRouter**: Cloud-based models with advanced reasoning
 
 ## Support
 

@@ -3,25 +3,86 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { HealthMetrics } from "@/components/HealthMetrics";
-import { Brain, MessageSquare, Heart, Zap, TrendingUp, Activity } from "lucide-react";
+import { Brain, MessageSquare, Heart, Zap, TrendingUp, Activity, Loader2 } from "lucide-react";
+
+// Define interfaces for our API responses
+interface StatusResponse {
+  ai?: {
+    provider?: string;
+    status?: string;
+  };
+  ollama?: {
+    status?: string;
+    model?: string;
+  };
+  oura?: {
+    status?: string;
+  };
+  mcpTools?: any[];
+}
+
+interface Conversation {
+  id: number | string;
+  title: string;
+  updatedAt: string;
+}
+
+interface Tool {
+  name: string;
+  description: string;
+}
 
 export default function Dashboard() {
-  const { data: status } = useQuery({
+  const { data: status, isLoading: statusLoading, error: statusError } = useQuery<StatusResponse>({
     queryKey: ['/api/status'],
     refetchInterval: 30000, // Refresh every 30 seconds
   });
 
-  const { data: conversations } = useQuery({
+  const { data: conversations, isLoading: conversationsLoading, error: conversationsError } = useQuery<Conversation[]>({
     queryKey: ['/api/conversations'],
   });
 
-  const { data: healthData } = useQuery({
+  const { data: healthData, isLoading: healthLoading, error: healthError } = useQuery({
     queryKey: ['/api/health', { limit: 10 }],
   });
 
-  const { data: tools } = useQuery({
+  const { data: tools, isLoading: toolsLoading, error: toolsError } = useQuery<Tool[]>({
     queryKey: ['/api/mcp/tools'],
   });
+  
+  // Safely access nested properties with proper typing
+  const isAIOnline = status?.ollama?.status === 'connected';
+  const aiModel = status?.ollama?.model || 'Unknown';
+  const conversationCount = conversations?.length || 0;
+  const isOuraConnected = status?.oura?.status === 'connected';
+  const mcpToolsCount = status?.mcpTools?.length || 0;
+  
+  // Show loading state while queries are in progress
+  const isLoading = statusLoading || conversationsLoading || healthLoading || toolsLoading;
+  
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-500" />
+          <p className="mt-2 text-lg">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Check for errors
+  const hasError = statusError || conversationsError || healthError || toolsError;
+  if (hasError) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center p-6 bg-red-50 rounded-lg border border-red-200 max-w-md">
+          <h2 className="text-xl font-bold text-red-700 mb-2">Error Loading Dashboard</h2>
+          <p className="text-red-600">There was a problem loading the dashboard data. Please try refreshing the page.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -34,9 +95,9 @@ export default function Dashboard() {
           </div>
           <div className="flex items-center space-x-3">
             <div className="flex items-center space-x-2">
-              <div className={`w-2 h-2 rounded-full ${(status as any)?.ollama?.status === 'connected' ? 'bg-green-500' : 'bg-red-500'}`}></div>
+              <div className={`w-2 h-2 rounded-full ${isAIOnline ? 'bg-green-500' : 'bg-red-500'}`}></div>
               <span className="text-sm text-slate-600">
-                {(status as any)?.ollama?.status === 'connected' ? 'AI Online' : 'AI Offline'}
+                {isAIOnline ? 'AI Online' : 'AI Offline'}
               </span>
             </div>
           </div>
@@ -53,7 +114,7 @@ export default function Dashboard() {
                 <div>
                   <p className="text-xs lg:text-sm text-slate-500 font-medium">AI Status</p>
                   <p className="text-lg lg:text-2xl font-bold text-slate-900">
-                    {(status as any)?.ollama?.status === 'connected' ? 'Online' : 'Offline'}
+                    {isAIOnline ? 'Online' : 'Offline'}
                   </p>
                 </div>
                 <div className="w-8 h-8 lg:w-12 lg:h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -61,8 +122,8 @@ export default function Dashboard() {
                 </div>
               </div>
               <div className="mt-2 lg:mt-4 flex items-center text-xs lg:text-sm">
-                <Badge variant={(status as any)?.ollama?.status === 'connected' ? 'default' : 'destructive'} className="text-xs">
-                  {(status as any)?.ollama?.model || 'Unknown'}
+                <Badge variant={isAIOnline ? 'default' : 'destructive'} className="text-xs">
+                  {aiModel}
                 </Badge>
               </div>
             </CardContent>
@@ -74,7 +135,7 @@ export default function Dashboard() {
                 <div>
                   <p className="text-xs lg:text-sm text-slate-500 font-medium">Conversations</p>
                   <p className="text-lg lg:text-2xl font-bold text-slate-900">
-                    {(conversations as any)?.length || 0}
+                    {conversationCount}
                   </p>
                 </div>
                 <div className="w-8 h-8 lg:w-12 lg:h-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -82,8 +143,7 @@ export default function Dashboard() {
                 </div>
               </div>
               <div className="mt-2 lg:mt-4 flex items-center text-xs lg:text-sm">
-                <TrendingUp className="h-3 w-3 lg:h-4 lg:w-4 text-green-500 mr-1" />
-                <span className="text-green-500 font-medium">Active</span>
+                <span className="text-slate-500">Recent Chats</span>
               </div>
             </CardContent>
           </Card>
@@ -94,7 +154,7 @@ export default function Dashboard() {
                 <div>
                   <p className="text-xs lg:text-sm text-slate-500 font-medium">Health Data</p>
                   <p className="text-lg lg:text-2xl font-bold text-slate-900">
-                    {(status as any)?.oura?.status === 'connected' ? 'Synced' : 'Offline'}
+                    {isOuraConnected ? 'Synced' : 'Offline'}
                   </p>
                 </div>
                 <div className="w-8 h-8 lg:w-12 lg:h-12 bg-purple-100 rounded-lg flex items-center justify-center">
@@ -102,7 +162,7 @@ export default function Dashboard() {
                 </div>
               </div>
               <div className="mt-2 lg:mt-4 flex items-center text-xs lg:text-sm">
-                <Badge variant={(status as any)?.oura?.status === 'connected' ? 'default' : 'secondary'} className="text-xs">
+                <Badge variant={isOuraConnected ? 'default' : 'secondary'} className="text-xs">
                   Oura Ring
                 </Badge>
               </div>
@@ -115,7 +175,7 @@ export default function Dashboard() {
                 <div>
                   <p className="text-xs lg:text-sm text-slate-500 font-medium">MCP Tools</p>
                   <p className="text-lg lg:text-2xl font-bold text-slate-900">
-                    {(status as any)?.mcpTools?.length || 0}
+                    {mcpToolsCount}
                   </p>
                 </div>
                 <div className="w-8 h-8 lg:w-12 lg:h-12 bg-orange-100 rounded-lg flex items-center justify-center">
@@ -148,14 +208,14 @@ export default function Dashboard() {
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-600">Ollama Server</span>
-                  <Badge variant={status?.ollama?.status === 'connected' ? 'default' : 'destructive'}>
-                    {status?.ollama?.status === 'connected' ? 'Connected' : 'Disconnected'}
+                  <Badge variant={isAIOnline ? 'default' : 'destructive'}>
+                    {isAIOnline ? 'Connected' : 'Disconnected'}
                   </Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-600">Oura Ring</span>
-                  <Badge variant={status?.oura?.status === 'connected' ? 'default' : 'secondary'}>
-                    {status?.oura?.status === 'connected' ? 'Connected' : 'Not Connected'}
+                  <Badge variant={isOuraConnected ? 'default' : 'secondary'}>
+                    {isOuraConnected ? 'Connected' : 'Not Connected'}
                   </Badge>
                 </div>
                 <div className="flex items-center justify-between">
@@ -172,38 +232,45 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {tools?.map((tool: any, index: number) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                      <div>
-                        <p className="font-medium text-slate-900">{tool.name}</p>
-                        <p className="text-xs text-slate-500">{tool.description}</p>
+                  {tools && tools.length > 0 ? (
+                    tools.map((tool, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                        <div>
+                          <p className="font-medium text-slate-900">{tool.name}</p>
+                          <p className="text-xs text-slate-500">{tool.description}</p>
+                        </div>
+                        <Badge variant="outline">Active</Badge>
                       </div>
-                      <Badge variant="outline">Active</Badge>
+                    ))
+                  ) : (
+                    <div className="text-center py-4 text-sm text-slate-500">
+                      No MCP tools available
                     </div>
-                  ))}
+                  )}
                 </div>
               </CardContent>
             </Card>
-
-            {/* Recent Activity */}
+            
+            {/* Recent Conversations */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Recent Activity</CardTitle>
+                <CardTitle className="text-lg">Recent Conversations</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {conversations?.slice(0, 3).map((conv: any) => (
-                    <div key={conv.id} className="p-3 bg-slate-50 rounded-lg">
-                      <p className="font-medium text-slate-900 truncate">{conv.title}</p>
-                      <p className="text-xs text-slate-500">
-                        {new Date(conv.updatedAt).toLocaleDateString()}
-                      </p>
+              <CardContent className="px-0">
+                <div className="space-y-0">
+                  {conversations && conversations.length > 0 ? (
+                    conversations.map((conversation) => (
+                      <div key={conversation.id} className="flex items-center justify-between py-2 px-6 hover:bg-slate-50 transition-colors">
+                        <span className="text-sm">{conversation.title}</span>
+                        <span className="text-xs text-slate-500">
+                          {new Date(conversation.updatedAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-4 text-sm text-slate-500">
+                      No recent conversations
                     </div>
-                  ))}
-                  {(!conversations || conversations.length === 0) && (
-                    <p className="text-sm text-slate-500 text-center py-4">
-                      No conversations yet. Start chatting with your AI assistant!
-                    </p>
                   )}
                 </div>
               </CardContent>
