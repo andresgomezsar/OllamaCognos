@@ -4,9 +4,13 @@ import { WebSocketServer, WebSocket } from "ws";
 import express, { Request, Response } from 'express';
 import http from 'http';
 import path from 'path';
+import axios from 'axios';
 
 import { OllamaClient } from './ollama';
 import { OuraClient } from './oura';
+import { PerplexityClient } from './perplexity';
+import { OpenRouterClient } from './openrouter';
+import { GroqClient } from './groq';
 
 // Import MCP system directly from mcpRouter.ts to avoid any reexport issues
 import { mcpRouter, mcpRoutingService, initMcpServers } from './mcp/mcpRouter';
@@ -36,6 +40,7 @@ import { ngrokService } from "./ngrok";
 // Use direct import with absolute path for better TypeScript resolution
 import { executeMCPTool } from "/Users/andresgomezsarmiento/Documents/GitHub/OllamaCognos/server/mcp/mcpUtils";
 import { createOllamaClient, createOpenRouterClient, listMCPTools } from "./clients/clientUtils";
+import { LimitlessClient } from "./limitless";
 
 export function registerRoutes(app: express.Application) {
   const server = http.createServer(app);
@@ -257,7 +262,86 @@ export function registerRoutes(app: express.Application) {
           }
           break;
           
-        // Add more test cases for other API tokens and endpoints
+        case 'LIMITLESS_API_TOKEN':
+          try {
+            const limitlessClient = new LimitlessClient(config.value);
+            const testResult = await limitlessClient.testConnection();
+            res.json({ success: true, message: 'Limitless API connection successful', details: testResult });
+          } catch (error) {
+            console.error('Limitless API connection test failed:', error);
+            res.status(400).json({ success: false, message: 'Limitless API connection failed', error: String(error) });
+          }
+          break;
+        
+        case 'PERPLEXITY_API_TOKEN':
+          try {
+            const perplexityClient = new PerplexityClient(config.value);
+            // Since PerplexityClient might not have a testConnection method, we'll add a simple test
+            const testResult = await axios.get('https://api.perplexity.ai/models', {
+              headers: {
+                'Authorization': `Bearer ${config.value}`,
+                'Content-Type': 'application/json'
+              }
+            });
+            res.json({ 
+              success: true, 
+              message: 'Perplexity API connection successful', 
+              details: { models: testResult.data?.data || [] } 
+            });
+          } catch (error) {
+            console.error('Perplexity API connection test failed:', error);
+            res.status(400).json({ 
+              success: false, 
+              message: 'Perplexity API connection failed', 
+              error: error instanceof Error ? error.message : String(error) 
+            });
+          }
+          break;
+        
+        case 'OPENROUTER_API_TOKEN':
+          try {
+            const openRouterClient = new OpenRouterClient(config.value);
+            const testResult = await openRouterClient.isHealthy();
+            if (testResult) {
+              const models = await openRouterClient.listModels();
+              res.json({ 
+                success: true, 
+                message: 'OpenRouter API connection successful', 
+                details: { models: models.data || [] } 
+              });
+            } else {
+              throw new Error('OpenRouter API health check failed');
+            }
+          } catch (error) {
+            console.error('OpenRouter API connection test failed:', error);
+            res.status(400).json({ 
+              success: false, 
+              message: 'OpenRouter API connection failed', 
+              error: error instanceof Error ? error.message : String(error) 
+            });
+          }
+          break;
+        
+        case 'GROQ_API_TOKEN':
+          try {
+            const groqClient = new GroqClient(config.value);
+            const testResult = await groqClient.testConnection();
+            res.json({ 
+              success: testResult.success, 
+              message: testResult.message, 
+              details: { models: testResult.models || [] } 
+            });
+          } catch (error) {
+            console.error('Groq API connection test failed:', error);
+            res.status(400).json({ 
+              success: false, 
+              message: 'Groq API connection failed', 
+              error: error instanceof Error ? error.message : String(error) 
+            });
+          }
+          break;
+
+        // Add test cases for other API tokens and endpoints as needed
         default:
           res.status(400).json({ success: false, message: `No test implemented for ${config.key}` });
       }

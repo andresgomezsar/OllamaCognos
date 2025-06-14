@@ -190,7 +190,7 @@ export const settings = pgTable("settings", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().unique(),
   ollamaUrl: text("ollama_url").notNull().default("http://localhost:11434"),
-  ollamaModel: text("ollama_model").notNull().default("llama3.2-vision:latest"),
+  ollamaModel: text("ollama_model").notNull().default("qwen3:14b"),
   ouraToken: text("oura_token"), // Encrypted
   enabledMcpTools: jsonb("enabled_mcp_tools").default(["health-analysis", "memory-store", "web-search"]),
   healthDataSources: jsonb("health_data_sources").default({}),

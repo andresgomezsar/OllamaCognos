@@ -103,3 +103,32 @@ export const statusApi = {
     return response.json();
   },
 };
+
+// Configuration API
+export const configApi = {
+  async getAllConfiguration(category?: string) {
+    const params = category ? `?category=${encodeURIComponent(category)}` : '';
+    const response = await apiRequest('GET', `/api/config${params}`);
+    return response.json();
+  },
+
+  async getConfiguration(key: string) {
+    const response = await apiRequest('GET', `/api/config/${encodeURIComponent(key)}`);
+    return response.json();
+  },
+
+  async updateConfiguration(key: string, value: string, category?: string, displayName?: string, encrypted = false) {
+    const response = await apiRequest('PUT', `/api/config/${encodeURIComponent(key)}`, {
+      value,
+      category,
+      displayName,
+      encrypted
+    });
+    return response.json();
+  },
+
+  async testConnection(key: string) {
+    const response = await apiRequest('GET', `/api/config/test/${encodeURIComponent(key)}`);
+    return response.json();
+  }
+};

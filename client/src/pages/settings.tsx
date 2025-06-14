@@ -8,8 +8,19 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { settingsApi, statusApi } from '@/lib/api';
-import { Settings, Zap, Shield, Database, Bot, Activity } from 'lucide-react';
+import { settingsApi, statusApi, configApi } from '@/lib/api';
+import { Settings, Zap, Shield, Database, Bot, Activity, Watch, PanelRightOpen } from 'lucide-react';
+
+// Define interface for configuration items
+interface ConfigItem {
+  key: string;
+  value: string;
+  category?: string;
+  displayName?: string;
+  encrypted?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
 
 export default function SettingsPage() {
   const { toast } = useToast();
@@ -47,6 +58,11 @@ export default function SettingsPage() {
   const [formData, setFormData] = useState({
     ollamaUrl: '',
     ollamaModel: '',
+    limitlessApiToken: '',
+    perplexityApiToken: '',
+    openrouterApiToken: '',
+    groqApiToken: '',
+    selectedProvider: 'ollama',
     enabledMcpTools: [],
     healthDataSources: [],
     privacyLevel: 'standard',
@@ -55,20 +71,62 @@ export default function SettingsPage() {
 
   const [testingOllama, setTestingOllama] = useState(false);
   const [ollamaTestResult, setOllamaTestResult] = useState<{success: boolean; message: string} | null>(null);
+  
+  const [testingLimitless, setTestingLimitless] = useState(false);
+  const [limitlessTestResult, setLimitlessTestResult] = useState<{success: boolean; message: string} | null>(null);
+
+  const [testingPerplexity, setTestingPerplexity] = useState(false);
+  const [perplexityTestResult, setPerplexityTestResult] = useState<{success: boolean; message: string} | null>(null);
+
+  const [testingOpenRouter, setTestingOpenRouter] = useState(false);
+  const [openRouterTestResult, setOpenRouterTestResult] = useState<{success: boolean; message: string} | null>(null);
+
+  const [testingGroq, setTestingGroq] = useState(false);
+  const [groqTestResult, setGroqTestResult] = useState<{success: boolean; message: string} | null>(null);
+
+  // Load configuration data
+  const { data: configurations } = useQuery({
+    queryKey: ['/api/config'],
+    queryFn: () => configApi.getAllConfiguration(),
+  });
 
   // Update form data when settings load
   useEffect(() => {
-    if (settings) {
-      setFormData({
-        ollamaUrl: settings.ollamaUrl || 'http://localhost:11434',
-        ollamaModel: settings.ollamaModel || 'llama3.2:3b',
-        enabledMcpTools: settings.enabledMcpTools || [],
-        healthDataSources: settings.healthDataSources || [],
-        privacyLevel: settings.privacyLevel || 'standard',
-        dataRetentionDays: settings.dataRetentionDays || 365,
-      });
+    if (settings?.data) {
+      setFormData(prevState => ({
+        ...prevState,
+        ollamaUrl: settings.data.ollamaUrl,
+        ollamaModel: settings.data.ollamaModel,
+        enabledMcpTools: settings.data.enabledMcpTools || [],
+        healthDataSources: settings.data.healthDataSources || [],
+        privacyLevel: settings.data.privacyLevel || 'standard',
+        dataRetentionDays: settings.data.dataRetentionDays || 90,
+        selectedProvider: settings.data.selectedProvider || 'ollama',
+      }));
     }
   }, [settings]);
+  
+  // Update token fields from configuration
+  useEffect(() => {
+    if (configurations?.data) {
+      const limitlessToken = configurations.data.find((config: ConfigItem) => config.key === 'LIMITLESS_API_TOKEN');
+      const perplexityToken = configurations.data.find((config: ConfigItem) => config.key === 'PERPLEXITY_API_TOKEN');
+      const openrouterToken = configurations.data.find((config: ConfigItem) => config.key === 'OPENROUTER_API_TOKEN');
+      const groqToken = configurations.data.find((config: ConfigItem) => config.key === 'GROQ_API_TOKEN');
+      
+      setFormData(prev => ({
+        ...prev,
+        limitlessApiToken: limitlessToken?.value || '',
+        perplexityApiToken: perplexityToken?.value || '',
+        openrouterApiToken: openrouterToken?.value || '',
+        groqApiToken: groqToken?.value || '',
+        selectedProvider: prev.selectedProvider || 
+          (openrouterToken?.value ? 'openrouter' : 
+           groqToken?.value ? 'groq' : 
+           perplexityToken?.value ? 'perplexity' : 'ollama')
+      }));
+    }
+  }, [configurations?.data]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,6 +165,37 @@ export default function SettingsPage() {
       });
     } finally {
       setTestingOllama(false);
+    }
+  };
+  
+  const testLimitlessConnection = async () => {
+    if (!formData.limitlessApiToken) {
+      setLimitlessTestResult({
+        success: false,
+        message: 'Please enter a Limitless API token',
+      });
+      return;
+    }
+    
+    try {
+      setTestingLimitless(true);
+      setLimitlessTestResult(null);
+      
+      // First save the token to configuration
+      if (formData.limitlessApiToken) {
+        await configApi.updateConfiguration('LIMITLESS_API_TOKEN', formData.limitlessApiToken, 'api', 'Limitless API Token', true);
+      }
+      
+      // Then test the connection
+      const result = await configApi.testConnection('LIMITLESS_API_TOKEN');
+      setLimitlessTestResult(result);
+    } catch (error) {
+      setLimitlessTestResult({
+        success: false,
+        message: error instanceof Error ? error.message : 'Unknown error occurred',
+      });
+    } finally {
+      setTestingLimitless(false);
     }
   };
 
@@ -236,20 +325,68 @@ export default function SettingsPage() {
                     id="ollamaModel"
                     value={formData.ollamaModel}
                     onChange={(e) => setFormData({ ...formData, ollamaModel: e.target.value })}
-                    placeholder="llama3.2:3b"
+                    placeholder="qwen3:14b"
                   />
                   <p className="text-xs text-gray-500">
-                    Available models depend on what's installed in your Ollama instance
+                    Recommended: qwen3:14b, qwen2.5vl:32b, deepseek-r1:32b, llama3.2-vision
                   </p>
                 </div>
               </div>
-
+              
+              {/* Limitless API Integration */}
+              <Separator />
+              <div className="space-y-4">
+                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Limitless Pendant Integration</h4>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="limitlessApiToken" className="flex items-center justify-between">
+                    <span>Limitless API Token</span>
+                    {limitlessTestResult && (
+                      <span className={`text-xs ${limitlessTestResult.success ? 'text-green-500' : 'text-red-500'}`}>
+                        {limitlessTestResult.success ? '✓ Connected' : '✗ Failed'}
+                      </span>
+                    )}
+                  </Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="limitlessApiToken"
+                      value={formData.limitlessApiToken}
+                      onChange={(e) => {
+                        setFormData({ ...formData, limitlessApiToken: e.target.value });
+                        setLimitlessTestResult(null);
+                      }}
+                      type="password"
+                      placeholder="Enter your Limitless API token"
+                      className="flex-1"
+                    />
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={testLimitlessConnection} 
+                      className="whitespace-nowrap"
+                      disabled={testingLimitless || !formData.limitlessApiToken}
+                    >
+                      {testingLimitless ? 'Testing...' : 'Test Connection'}
+                    </Button>
+                  </div>
+                  {limitlessTestResult && (
+                    <p className={`text-sm ${limitlessTestResult.success ? 'text-green-600' : 'text-red-500'}`}>
+                      {limitlessTestResult.message}
+                    </p>
+                  )}
+                  <p className="text-xs text-gray-500">
+                    Get your API token from the Limitless AI developer dashboard
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="p-6 pt-0">
               <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                 <div className="flex items-center gap-3">
                   <div>
                     <p className="font-medium">Ollama Status</p>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {status?.ollama?.url}
+                      {status?.ollama?.status === 'connected' ? 'Connected to Ollama server' : 'Disconnected from Ollama'}
                     </p>
                   </div>
                 </div>
@@ -407,6 +544,16 @@ export default function SettingsPage() {
                   <p className="text-sm text-gray-600 dark:text-gray-400">Sync data from Oura Ring</p>
                 </div>
                 <Switch defaultChecked={status?.oura?.configured} disabled={!status?.oura?.configured} />
+              </div>
+              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <div>
+                  <p className="font-medium">Limitless Pendant</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Access Limitless Pendant lifelogs</p>
+                </div>
+                <Switch 
+                  defaultChecked={Boolean(formData.limitlessApiToken)} 
+                  disabled={!formData.limitlessApiToken} 
+                />
               </div>
             </div>
           </CardContent>

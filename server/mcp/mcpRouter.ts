@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { OuraMcpServer, createOuraMcpServer } from './oura/ouraMcpServer';
+import { LimitlessMcpServer, createLimitlessMcpServer } from './limitless/limitlessMcpServer';
 import { InMemoryTokenStore } from './auth/authProvider';
 import { SecurityMiddleware } from './auth/securityMiddleware';
 
@@ -17,19 +18,28 @@ const router = Router();
 export const mcpServers: Record<string, any> = {};
 
 /**
- * Initialize MCP servers with environment variables
+ * Initialize MCP servers with environment variables or configuration
  */
-export function initMcpServers() {
-  // Initialize Oura MCP server with token from environment
-  const ouraToken = process.env.OURA_TOKEN;
+export async function initMcpServers() {
+  // Get configuration from storage if available
+  let ouraToken = process.env.OURA_TOKEN;
+  let limitlessToken = process.env.LIMITLESS_API_TOKEN;
+  
+  // Initialize Oura MCP server
   if (ouraToken) {
     mcpServers['oura'] = createOuraMcpServer(ouraToken);
     console.log('Oura MCP server initialized');
   } else {
-    console.warn('OURA_TOKEN environment variable not found, Oura MCP server not initialized');
+    console.warn('OURA_TOKEN not found, Oura MCP server not initialized');
   }
 
-  // Initialize other MCP servers here...
+  // Initialize Limitless MCP server
+  if (limitlessToken) {
+    mcpServers['limitless'] = createLimitlessMcpServer(limitlessToken);
+    console.log('Limitless MCP server initialized');
+  } else {
+    console.warn('LIMITLESS_API_TOKEN not found, Limitless MCP server not initialized');
+  }
 }
 
 /**

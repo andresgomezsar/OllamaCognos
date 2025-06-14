@@ -67,7 +67,7 @@ Respond with a JSON object that has these fields:
       // Call Ollama for decision making
       try {
         const completion = await ollamaClient.chat({
-          model: settings.ollamaModel || 'llama3',
+          model: settings.ollamaModel || 'qwen3:14b',
           messages: [
             { role: 'system', content: 'You are a tool dispatcher that determines which tools to use for a given query.' },
             { role: 'user', content: prompt }

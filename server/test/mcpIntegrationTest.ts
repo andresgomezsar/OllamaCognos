@@ -149,7 +149,7 @@ describe('MCP End-to-End Integration Tests', () => {
     // 2. AI decides to use MCP tool (simulated via the stub)
     const aiResponse = await ollamaClientStub.chat({
       messages: [{ role: 'user', content: userMessage }],
-      model: 'llama3',
+      model: 'qwen3:14b',
       tools: [{ 
         name: routingDecision.enabledTools[0],
         description: 'Fetch Oura Ring health data',

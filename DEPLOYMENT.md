@@ -146,6 +146,7 @@ curl -fsSL https://ollama.ai/install.sh | sh
 # Download models
 ollama pull deepseek-r1:32b
 ollama pull llama3.2-vision
+ollama pull qwen3:14b
 ollama serve
 ```
 
