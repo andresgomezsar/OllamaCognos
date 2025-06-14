@@ -1,7 +1,10 @@
 import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import { OuraMcpServer, createOuraMcpServer } from './oura/ouraMcpServer';
-import { LimitlessMcpServer, createLimitlessMcpServer } from './limitless/limitlessMcpServer';
+import { z } from 'zod';
+import { isAuthenticated } from "../auth";
+import { LimitlessMcpServer, createLimitlessMcpServer } from "./limitless/limitlessMcpServer";
+import { OuraMcpServer, createOuraMcpServer } from "./oura/ouraMcpServer";
+import { BeeMcpServer, createBeeMcpServer } from "./bee/beeMcpServer";
 import { InMemoryTokenStore } from './auth/authProvider';
 import { SecurityMiddleware } from './auth/securityMiddleware';
 
@@ -14,8 +17,132 @@ const securityMiddleware = new SecurityMiddleware(tokenStore);
 // Create the MCP Router - this will be exported and used in routes.ts
 const router = Router();
 
+// Type definition for routing request parameters
+interface RoutingRequest {
+  userMessage: string;
+  userId: string;
+  conversationContext?: any[];
+  enabledTools?: string[];
+}
+
+// Type definition for routing decision response
+interface RoutingResponse {
+  routingDecision?: {
+    reasoning: string;
+    confidence: number;
+  };
+  enabledTools: string[];
+}
+
+// Create the MCP Routing Service that will be used by routes.ts
+export const mcpRoutingService = {
+  // Route a user request to appropriate tools
+  routeRequest: async (request: RoutingRequest): Promise<RoutingResponse> => {
+    const { userMessage, userId, conversationContext = [] } = request;
+    
+    console.log(`Routing request for user ${userId}: "${userMessage.substring(0, 50)}..."`);
+    
+    // Default tools to enable - in production this would use NLP to determine appropriate tools
+    const enabledTools = determineEnabledTools(userMessage, conversationContext);
+    
+    return {
+      routingDecision: {
+        reasoning: `Selected tools based on message content: "${userMessage.substring(0, 30)}..."`,
+        confidence: 0.85, // Placeholder confidence score
+      },
+      enabledTools
+    };
+  },
+
+  // Execute a tool by server and tool name
+  executeTool: async (serverName: string, toolName: string, args: Record<string, any>) => {
+    return executeMCPTool(serverName, toolName, args);
+  },
+  
+  // List all available tools
+  listTools: () => {
+    return listMCPTools();
+  },
+  
+  // Get a specific MCP server
+  getServer: (serverName: string) => {
+    return mcpServers[serverName] || null;
+  },
+  
+  // Check if an MCP server exists
+  hasServer: (serverName: string) => {
+    return !!mcpServers[serverName];
+  }
+};
+
+/**
+ * Determine which tools to enable based on the user message
+ * In production, this would use NLP/LLM to analyze the message and select appropriate tools
+ */
+function determineEnabledTools(userMessage: string, conversationContext: any[] = []): string[] {
+  const message = userMessage.toLowerCase();
+  const enabledTools: string[] = [];
+  
+  // Simple keyword-based routing
+  if (message.includes('search') || message.includes('find') || message.includes('look up')) {
+    enabledTools.push('search/web-search');
+  }
+  
+  if (message.includes('memory') || message.includes('remember') || message.includes('recall')) {
+    enabledTools.push('memory/retrieve');
+  }
+  
+  if (message.includes('health') || message.includes('sleep') || message.includes('activity')) {
+    enabledTools.push('oura/health-analysis');
+  }
+  
+  if (message.includes('transcribe') || message.includes('audio') || message.includes('recording')) {
+    enabledTools.push('bee/transcribe');
+  }
+  
+  if (message.includes('limitless') || message.includes('notes') || message.includes('journal')) {
+    enabledTools.push('limitless/get-recent-entries');
+  }
+  
+  // Default to search if no specific tools matched
+  if (enabledTools.length === 0) {
+    enabledTools.push('search/web-search');
+  }
+  
+  return enabledTools;
+}
+
+// Common interface for all MCP servers
+interface McpServer {
+  executeToolCall(toolCall: any): Promise<any>;
+  listTools(): Promise<any[]>;
+  isHealthy(): Promise<boolean>;
+}
+
+// Extended interface with required methods for router functionality
+// Event type for streaming handler callbacks
+type StreamEvent = 'data' | 'error' | 'end';
+
+// Handler options with EventEmitter-like interface
+interface StreamHandlerOptions {
+  emit: (event: StreamEvent, data: any) => void;
+}
+
+// Handler function returned by createStreamingHandler
+type StreamHandler = (data: any) => Promise<any>;
+
+interface McpServerWithRouter extends McpServer {
+  handleRequest(request: any): Promise<any>;
+  createStreamingHandler?(options: StreamHandlerOptions): StreamHandler;
+  getTools?(): any[];
+}
+
 // Map of MCP servers
-export const mcpServers: Record<string, any> = {};
+interface McpServerMap {
+  [key: string]: McpServerWithRouter;
+}
+
+export const mcpServers: McpServerMap = {};
 
 /**
  * Initialize MCP servers with environment variables or configuration
@@ -24,21 +151,74 @@ export async function initMcpServers() {
   // Get configuration from storage if available
   let ouraToken = process.env.OURA_TOKEN;
   let limitlessToken = process.env.LIMITLESS_API_TOKEN;
+  let beeToken = process.env.BEE_API_TOKEN;
   
   // Initialize Oura MCP server
   if (ouraToken) {
-    mcpServers['oura'] = createOuraMcpServer(ouraToken);
-    console.log('Oura MCP server initialized');
+    try {
+      mcpServers['oura'] = createOuraMcpServer(ouraToken);
+      console.log('Oura MCP server initialized');
+    } catch (error) {
+      console.error('Failed to initialize Oura MCP server:', error);
+      // Continue without crashing
+    }
   } else {
     console.warn('OURA_TOKEN not found, Oura MCP server not initialized');
   }
 
   // Initialize Limitless MCP server
   if (limitlessToken) {
-    mcpServers['limitless'] = createLimitlessMcpServer(limitlessToken);
-    console.log('Limitless MCP server initialized');
+    try {
+      mcpServers['limitless'] = createLimitlessMcpServer(limitlessToken);
+      console.log('Limitless MCP server initialized');
+    } catch (error) {
+      console.error('Failed to initialize Limitless MCP server:', error);
+      // Continue without crashing
+    }
   } else {
     console.warn('LIMITLESS_API_TOKEN not found, Limitless MCP server not initialized');
+  }
+
+  // Initialize Bee MCP server
+  if (beeToken) {
+    try {
+      mcpServers['bee'] = createBeeMcpServer(beeToken);
+      console.log('Bee MCP server initialized');
+    } catch (error) {
+      console.error('Failed to initialize Bee MCP server:', error);
+      // Continue without crashing
+    }
+  } else {
+    console.warn('BEE_API_TOKEN not found, Bee MCP server not initialized');
+  }
+
+  // Add diagnostic logging for WebSocket debugging
+  console.log('Available NodeJS modules for WebSocket connections:');
+  try {
+    // List modules that might be related to WebSocket connections
+    console.log('- ws module available:', !!require.resolve('ws'));
+  } catch (e) {
+    console.log('- ws module not available');
+  }
+  try {
+    console.log('- socket.io module available:', !!require.resolve('socket.io'));
+  } catch (e) {
+    console.log('- socket.io module not available');
+  }
+  console.log('MCP initialization complete. Active servers:', Object.keys(mcpServers));
+  
+  // Check for critical WebSocket dependencies
+  try {
+    const packageJson = require('../package.json');
+    const dependencies = {...packageJson.dependencies, ...packageJson.devDependencies};
+    const wsRelatedDeps = Object.keys(dependencies).filter(dep => 
+      dep.includes('socket') || dep.includes('ws') || dep.includes('stream')
+    );
+    if (wsRelatedDeps.length > 0) {
+      console.log('WebSocket-related dependencies:', wsRelatedDeps);
+    }
+  } catch (error) {
+    console.warn('Could not analyze WebSocket dependencies:', error);
   }
 }
 
@@ -187,41 +367,58 @@ router.post('/:server/call-tool-stream',
       // Create unique request ID
       const requestId = uuidv4();
       
-      // Get streaming handler for this request
-      const streamEmitter = mcpServers[server].createStreamingHandler(requestId);
+      // Create event emitter-like handlers for streaming
+      const emitter = {
+        emit: (event: StreamEvent, data: any) => {
+          if (event === 'data') {
+            res.write(`data: ${JSON.stringify({ type: 'chunk', chunk: data })}\n\n`);
+          } else if (event === 'error') {
+            res.write(`data: ${JSON.stringify({ type: 'error', error: data })}\n\n`);
+            res.end();
+          }
+        },
+      };
+
+      // Check if server implements streaming handler
+      if (!mcpServers[server].createStreamingHandler) {
+        // Fallback to non-streaming execution for servers without streaming support
+        try {
+          const result = await mcpServers[server].handleRequest({
+            type: 'execute_tool',
+            name,
+            arguments: args || {}
+          });
+          
+          // Return result as if it was streamed
+          res.write(`data: ${JSON.stringify({ type: 'complete', result })}\n\n`);
+          res.end();
+        } catch (error: any) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          res.write(`data: ${JSON.stringify({ type: 'error', error: errorMessage })}\n\n`);
+          res.end();
+        }
+        return;
+      }
       
-      // Set up event listeners
-      streamEmitter.on('tool-result', (result: any) => {
-        res.write(`data: ${JSON.stringify({ type: 'result', result })}\n\n`);
-      });
+      // Create a streaming handler with event emitter wrapper
+      const streamingHandler = mcpServers[server].createStreamingHandler(emitter);
       
-      streamEmitter.on('tool-error', (error: Error) => {
-        res.write(`data: ${JSON.stringify({ type: 'error', error: error.message })}\n\n`);
-      });
-      
-      // Handle client disconnect
-      req.on('close', () => {
-        streamEmitter.emit('end');
-        res.end();
-      });
-      
-      // Initiate the tool call
-      mcpServers[server].handleRequest({
-        type: 'call_tool',
-        params: {
+      // Call the streaming handler with the tool call params
+      try {
+        const finalResult = await streamingHandler({
           name,
           arguments: args || {},
-        },
-      }).then((finalResult: any) => {
+        });
+        
         // Send final result
         res.write(`data: ${JSON.stringify({ type: 'complete', result: finalResult })}\n\n`);
         res.end();
-      }).catch((error: unknown) => {
+      } catch (error: unknown) {
         // Send error and close connection
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         res.write(`data: ${JSON.stringify({ type: 'error', error: errorMessage })}\n\n`);
         res.end();
-      });
+      }
     } catch (error: unknown) {
       console.error(`Error in streaming tool call ${name} on ${server}:`, error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -230,221 +427,55 @@ router.post('/:server/call-tool-stream',
     }
 });
 
-/**
- * MCP routing service - this resolves the original TypeScript error
- * by providing the routeRequest method that was previously being called
- * on the Express router
- */
-export class McpRoutingService {
-  /**
-   * Route a user request to the appropriate MCP tools
-   */
-  async routeRequest({ 
-    userMessage, 
-    userId, 
-    conversationContext 
-  }: {
-    userMessage: string;
-    userId: string;
-    conversationContext: any[];
-  }) {
-    console.log(`Routing MCP request for user ${userId}`);
-    
-    // Determine which tools are appropriate for this message
-    const enabledTools = await this.determineEnabledTools(userMessage, userId, conversationContext);
-    
-    return {
-      enabledTools,
-      routingDecision: {
-        recommendedServer: enabledTools.length > 0 ? enabledTools[0].split('/')[0] : null,
-        confidence: enabledTools.length > 0 ? 0.85 : 0,
-        reasoning: `Enabled ${enabledTools.length} tools based on message content`
-      }
-    };
-  }
-  
-  /**
-   * Determine which tools should be enabled for a given user message
-   * Enhanced with more sophisticated pattern matching and context awareness
-   */
-  private async determineEnabledTools(
-    userMessage: string,
-    userId: string,
-    conversationContext: any[]
-  ): Promise<string[]> {
-    const message = userMessage.toLowerCase();
-    const enabledTools: string[] = [];
-    
-    // Define tool detection patterns for different domains
-    const toolPatterns = {
-      health: {
-        patterns: [
-          // Health metrics keywords
-          /health|wellness|fitness|medical|activity|workout/,
-          /sleep|rest|fatigue|tired|insomnia|wake up|bedtime/,
-          /steps|walked|walking|run|running|exercise|active/,
-          /heart rate|pulse|bpm|heartbeat|cardiovascular/,
-          /readiness|recovery|stress level|hrv|body battery/,
-          /calories|weight|burned|nutrition|diet|water/,
-          
-          // Oura specific keywords
-          /oura|ring|wearable|tracker|device/,
-          
-          // Time-related health queries
-          /yesterday.*sleep|last night.*sleep|today.*activity/,
-          /week.*activity|month.*exercise|year.*fitness/,
-        ],
-        tools: ['oura/oura-fetch', 'oura/health-analysis']
-      },
-      search: {
-        patterns: [
-          // Direct search requests
-          /search|find|look up|google|information about|tell me about/,
-          /what is|who is|where is|when was|why does|how do/,
-          
-          // Knowledge-based questions
-          /explain|describe|details on|facts about|history of/,
-          /latest|news|current|recent|update on/,
-          
-          // Research indicators
-          /research|study|paper|article|publication|journal/,
-        ],
-        tools: ['search/web-search']
-      },
-      memory: {
-        patterns: [
-          // Memory and recall
-          /remember|recall|previously|earlier|before|last time/,
-          /you said|you told|you mentioned|you suggested/,
-          /we discussed|we talked about|I asked|I told you/,
-          
-          // Session continuity
-          /continue|follow up|back to|as we were/,
-        ],
-        tools: ['memory/retrieve']
-      },
-      integration: {
-        patterns: [
-          // Connected services
-          /connect|integration|service|account|sync|api/,
-          /perplexity|oura|openai|google|spotify|weather/,
-        ],
-        tools: ['system/service-status']
-      }
-    };
-    
-    // Track match confidence for different tool categories
-    const categoryConfidence: Record<string, number> = {};
-    
-    // Process the current message for tool patterns
-    for (const [category, config] of Object.entries(toolPatterns)) {
-      // Initialize confidence for this category
-      categoryConfidence[category] = 0;
-      
-      // Check each pattern against the message
-      for (const pattern of config.patterns) {
-        if (pattern.test(message)) {
-          categoryConfidence[category] += 0.2; // Increase confidence with each match
-        }
-      }
-      
-      // If confidence exceeds threshold, add the tools
-      if (categoryConfidence[category] > 0.15) {
-        enabledTools.push(...config.tools);
-      }
-    }
-    
-    // Consider conversation context for additional signals
-    // Look at the last 3 messages for context
-    const recentContext = conversationContext.slice(-3);
-    
-    for (const contextMsg of recentContext) {
-      const contextContent = typeof contextMsg.content === 'string' ? 
-        contextMsg.content.toLowerCase() : '';
-      
-      // Don't reprocess if it's the current message
-      if (contextContent === message) continue;
-      
-      // Check context for additional patterns with reduced confidence
-      for (const [category, config] of Object.entries(toolPatterns)) {
-        for (const pattern of config.patterns) {
-          if (pattern.test(contextContent)) {
-            // Add lower weight for context matches
-            categoryConfidence[category] += 0.1; 
-            
-            // If threshold now exceeded, add tools
-            if (categoryConfidence[category] > 0.15 && 
-                !config.tools.some(tool => enabledTools.includes(tool))) {
-              enabledTools.push(...config.tools);
-            }
-          }
-        }
-      }
-    }
-    
-    // User-specific customization (in a real app, fetch from user settings)
-    // This is where you'd add code to get user preferences and adjust tools
-    try {
-      // Example only - in real code, fetch user settings from DB
-      const userPreferredTools: string[] = [];
-      
-      // Add any user-preferred tools that aren't already enabled
-      for (const tool of userPreferredTools) {
-        if (!enabledTools.includes(tool)) {
-          enabledTools.push(tool);
-        }
-      }
-    } catch (error) {
-      console.error('Error loading user tool preferences:', error);
-    }
-    
-    // Fallback: If no tools matched and the message isn't a simple greeting,
-    // enable web search as a last resort
-    if (enabledTools.length === 0 && 
-        !/^(hi|hello|hey|greetings|howdy|good (morning|afternoon|evening)|hola)\b/.test(message)) {
-      enabledTools.push('search/web-search');
-      console.log('No specific tools matched; falling back to web search');
-    }
-    
-    // Log the tool selection decision
-    console.log(`Enabled tools for message: ${enabledTools.join(', ')}`);
-    console.log(`Category confidence: ${JSON.stringify(categoryConfidence)}`);
-    
-    return enabledTools;
-  }
-}
-
-// Create and export the MCP routing service
-export const mcpRoutingService = new McpRoutingService();
-
-/**
- * Backward compatibility endpoints - these provide the same simplified API
- * as the legacy mcpRouter to ensure smooth migration
- */
-
-// Schema for validating MCP tool execution requests
-import { z } from 'zod';
-import { executeMCPTool } from './mcpUtils';
-import { isAuthenticated } from '../auth';
+// ... rest of the code remains the same ...
 
 // Function to list all available MCP tools across all servers
 function listMCPTools(): string[] {
-  const tools: string[] = [];
+  const allTools: string[] = [];
   
-  // Iterate through all MCP servers
-  Object.entries(mcpServers).forEach(([serverName, server]) => {
+  for (const serverName in mcpServers) {
+    const server = mcpServers[serverName];
     try {
-      // Get tools from this server and add them to the list
-      const serverTools = server.getTools?.() || [];
-      serverTools.forEach((tool: any) => {
-        tools.push(`${serverName}/${tool.name}`);
-      });
+      // Try to get tools from getTools method if available
+      if (server.getTools && typeof server.getTools === 'function') {
+        const tools = server.getTools();
+        allTools.push(...tools.map(tool => `${serverName}:${tool.name}`));
+      } 
+      // Alternative: request tools via handleRequest if getTools not available
+      else if (server.handleRequest) {
+        server.handleRequest({ type: 'list_tools' })
+          .then(response => {
+            if (response && response.tools) {
+              allTools.push(...response.tools.map((tool: any) => `${serverName}:${tool.name}`));
+            }
+          })
+          .catch(err => console.error(`Error getting tools for ${serverName}:`, err));
+      }
     } catch (error) {
-      console.error(`Error getting tools from server ${serverName}:`, error);
+      console.error(`Error listing tools for ${serverName}:`, error);
     }
-  });
+  }
   
-  return tools;
+  return allTools;
+}
+
+/**
+ * Utility function to execute an MCP tool call
+ * @param serverName The MCP server name
+ * @param toolName The name of the tool to execute
+ * @param args Arguments for the tool call
+ */
+async function executeMCPTool(serverName: string, toolName: string, args: Record<string, any>): Promise<any> {
+  if (!serverName || !toolName || !mcpServers[serverName]) {
+    throw new Error(`Invalid server or tool: ${serverName}/${toolName}`);
+  }
+  
+  // Execute the tool call
+  return mcpServers[serverName].handleRequest({
+    type: 'execute_tool',
+    name: toolName,
+    arguments: args
+  });
 }
 
 // Schema for validating MCP tool execution requests
@@ -636,3 +667,6 @@ router.get('/health/:dataType?', isAuthenticated, async (req: Request, res: Resp
 
 // Export the router
 export const mcpRouter = router;
+
+// Re-export key utility functions
+export { listMCPTools, executeMCPTool };

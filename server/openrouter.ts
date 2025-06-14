@@ -45,6 +45,15 @@ export class OpenRouterClient {
 
   async chat(request: OpenRouterRequest): Promise<OpenRouterResponse> {
     try {
+      console.log('OpenRouter request:', JSON.stringify(request, null, 2));
+      
+      const requestBody = JSON.stringify({
+        ...request,
+        stream: false,
+      });
+      
+      console.log(`Sending request to ${this.baseUrl}/chat/completions with body length: ${requestBody.length}`);
+      
       const response = await fetch(`${this.baseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
@@ -53,19 +62,25 @@ export class OpenRouterClient {
           'HTTP-Referer': 'https://cognos-ai.replit.app',
           'X-Title': 'Cognos AI Health Assistant',
         },
-        body: JSON.stringify({
-          ...request,
-          stream: false,
-        }),
+        body: requestBody,
       });
 
+      console.log(`OpenRouter response status: ${response.status} ${response.statusText}`);
+      
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+        const errorData = await response.json().catch((e) => {
+          console.error('Failed to parse error response:', e);
+          return {};
+        });
+        console.error('OpenRouter API error details:', JSON.stringify(errorData, null, 2));
         throw new Error(`OpenRouter API error: ${response.status} ${response.statusText} - ${JSON.stringify(errorData)}`);
       }
 
-      return await response.json();
+      const responseData = await response.json();
+      console.log('OpenRouter response:', JSON.stringify(responseData, null, 2));
+      return responseData;
     } catch (error) {
+      console.error('OpenRouter chat error:', error);
       if (error instanceof Error) {
         throw new Error(`Failed to connect to OpenRouter: ${error.message}`);
       }

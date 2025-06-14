@@ -16,7 +16,17 @@ export function useWebSocket() {
   const connect = () => {
     try {
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-      const wsUrl = `${protocol}//${window.location.host}/ws`;
+      
+      // Get authentication token from localStorage
+      const authToken = localStorage.getItem('authToken');
+      
+      // Build WebSocket URL with auth token as query param if available
+      let wsUrl = `${protocol}//${window.location.host}/ws`;
+      if (authToken) {
+        wsUrl = `${wsUrl}?token=${encodeURIComponent(authToken)}`;
+      } else {
+        console.warn('No authentication token found in localStorage');
+      }
       
       const ws = new WebSocket(wsUrl);
 

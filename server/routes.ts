@@ -389,12 +389,39 @@ export function registerRoutes(app: express.Application) {
   // WebSocket server for real-time chat
   const wss = new WebSocketServer({ server: server, path: '/ws' });
 
-  // Store active WebSocket connections
-  const connections = new Map<string, WebSocket>();
+  // Store active WebSocket connections with their user ID
+  const connections = new Map<string, { ws: WebSocket, userId: number }>();
+  
+  // Parse token from query params for WebSocket
+  function parseToken(req: http.IncomingMessage): string | null {
+    const url = new URL(req.url || '', `http://${req.headers.host}`);
+    return url.searchParams.get('token');
+  }
+  
+  // Verify token and get user ID (simplified for development)
+  async function getUserIdFromToken(token: string | null): Promise<number | null> {
+    if (!token) return null;
+    
+    try {
+      // In a real production app, verify JWT or session token here
+      // For now, we'll use a simplified approach for development
+      
+      // TODO: Replace with actual token verification
+      // This is just a placeholder that assumes token is valid
+      return 1; // Default to user ID 1 for development
+    } catch (error) {
+      console.error('Error verifying token:', error);
+      return null;
+    }
+  }
 
-  wss.on('connection', (ws, req) => {
+  wss.on('connection', async (ws, req) => {
+    // Extract token and get user ID
+    const token = parseToken(req);
+    const userId = await getUserIdFromToken(token) || 1; // Fall back to user ID 1 for development
+    
     const connectionId = Math.random().toString(36).substring(7);
-    connections.set(connectionId, ws);
+    connections.set(connectionId, { ws, userId });
 
     ws.on('message', async (data) => {
       try {
@@ -426,9 +453,13 @@ export function registerRoutes(app: express.Application) {
   async function handleChatMessage(message: any, ws: WebSocket) {
     try {
       const { conversationId, content } = message;
-      // Since WebSocket doesn't have authentication context yet, use default user
-      // In the future, this could be improved with a token-based system
-      const userId = 1; // Default user ID
+      
+      // Find the connection info to get the authenticated user ID
+      const connectionEntry = Array.from(connections.entries())
+        .find(([_, connInfo]) => connInfo.ws === ws);
+      
+      // Get the user ID from the connection, or default to user 1 for development
+      const userId = connectionEntry ? connectionEntry[1].userId : 1;
       
       // Get user settings
       const settings = await storage.getSettings(userId);

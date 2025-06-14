@@ -68,6 +68,27 @@ export class OuraMcpServer {
         tools: ouraTools,
       };
     };
+    
+  /**
+   * List available tools (compatibility with McpServerWithRouter interface)
+   */
+  async listTools(): Promise<any[]> {
+    return ouraTools;
+  }
+  
+  /**
+   * Get cached tools array
+   */
+  getTools(): any[] {
+    return ouraTools;
+  }
+  
+  /**
+   * Execute a tool call directly (compatibility with McpServerWithRouter interface)
+   */
+  async executeToolCall(toolCall: { name: string; parameters: any }): Promise<any> {
+    return this.handleToolCall(toolCall.name, toolCall.parameters);
+  };
 
   /**
    * Get list of available prompts
@@ -288,9 +309,37 @@ export class OuraMcpServer {
 
   /**
    * Create a streaming response handler that emits events as data is processed
+   * @param options Options with emit function for handling events
+   */
+  createStreamingHandler(options: { emit: (event: string, data: any) => void }): any {
+    const streamEmitter = new EventEmitter();
+    
+    // Forward events to the provided emit function
+    streamEmitter.on("tool-result", (toolName: string, result: any) => {
+      options.emit("data", result);
+    });
+    
+    streamEmitter.on("tool-error", (toolName: string, error: any) => {
+      options.emit("error", error instanceof Error ? error.message : 'Unknown error');
+    });
+    
+    // Return a function that accepts the tool call and connects it to our event system
+    return async (data: any) => {
+      try {
+        const result = await this.handleToolCall(data.name, data.arguments || {});
+        return result;
+      } catch (error: any) {
+        console.error(`Error in Oura streaming handler:`, error);
+        throw error;
+      }
+    };
+  }
+  
+  /**
+   * Legacy streaming handler for backward compatibility
    * @param requestId Unique identifier for the request
    */
-  createStreamingHandler(requestId: string): EventEmitter {
+  createLegacyStreamingHandler(requestId: string): EventEmitter {
     const streamEmitter = new EventEmitter();
     
     // Set up event forwarding for this request
@@ -310,6 +359,7 @@ export class OuraMcpServer {
     
     return streamEmitter;
   }
+  
 }
 
 /**

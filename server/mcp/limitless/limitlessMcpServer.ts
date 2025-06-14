@@ -25,11 +25,36 @@ interface McpToolCall {
 
 export class LimitlessMcpServer {
   private client: LimitlessClient;
+  private tools: McpTool[] = [];
 
   constructor(apiKey: string) {
     this.client = new LimitlessClient(apiKey);
+    // Initialize tools cache
+    this.initTools();
+  }
+  
+  /**
+   * Initialize the tools cache
+   */
+  private async initTools() {
+    try {
+      this.tools = await this.listTools();
+    } catch (error) {
+      console.error('Error initializing Limitless tools cache:', error);
+      this.tools = [];
+    }
   }
 
+  /**
+   * List available tools for the Limitless MCP server
+   */
+  /**
+   * Get cached tools array
+   */
+  getTools(): McpTool[] {
+    return this.tools;
+  }
+  
   /**
    * List available tools for the Limitless MCP server
    */
@@ -170,11 +195,75 @@ export class LimitlessMcpServer {
         throw new Error(`Unknown tool: ${name}`);
     }
   }
+  
+  /**
+   * Handle a request to the MCP server
+   * This provides compatibility with the MCP router
+   */
+  async handleRequest(request: any): Promise<any> {
+    const { type } = request;
+    
+    switch (type) {
+      case 'list_tools':
+        return {
+          tools: await this.listTools()
+        };
+      
+      case 'execute_tool':
+        if (!request.name) {
+          throw new Error('Tool name is required');
+        }
+        return this.executeToolCall({
+          name: request.name,
+          parameters: request.arguments || {}
+        });
+      
+      default:
+        throw new Error(`Unsupported request type: ${type}`);
+    }
+  }
+
+  /**
+   * Create a streaming handler for the MCP server
+   * This provides compatibility with the MCP router's streaming API
+   */
+  createStreamingHandler(options: { emit: (event: string, data: any) => void }): (data: any) => Promise<any> {
+    return async (data: any) => {
+      try {
+        // Execute the tool call
+        const result = await this.executeToolCall({
+          name: data.name,
+          parameters: data.arguments || {}
+        });
+        
+        // Return the result
+        return result;
+      } catch (error) {
+        console.error(`Error in Limitless MCP streaming handler:`, error);
+        throw error;
+      }
+    };
+  }
+
+  /**
+   * Check if the service is healthy
+   */
+  async isHealthy(): Promise<boolean> {
+    try {
+      // Try to get recent entries as a health check
+      await this.client.getRecentEntries(1);
+      return true;
+    } catch (error) {
+      console.error('Limitless health check failed:', error);
+      return false;
+    }
+  }
 }
 
 /**
  * Create a new Limitless MCP server instance
  */
+
 export function createLimitlessMcpServer(apiKey: string): LimitlessMcpServer {
   return new LimitlessMcpServer(apiKey);
 }

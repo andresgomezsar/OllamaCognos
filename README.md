@@ -1,6 +1,6 @@
 # Cognos - Personal AI Health Assistant
 
-An advanced Ollama-compatible personal AI assistant that integrates health data from Oura Ring with local LLMs and cloud AI providers for comprehensive AI-powered health insights and analysis.
+An advanced Ollama-compatible personal AI assistant that integrates health data from Oura Ring, Bee transcriptions, and Limitless notes with local LLMs and cloud AI providers for comprehensive AI-powered health insights and analysis.
 
 ## Features
 
@@ -10,8 +10,10 @@ An advanced Ollama-compatible personal AI assistant that integrates health data 
 - **Smart Routing**: Automatic model detection and provider selection
 - **Fallback Support**: Seamless switching between cloud and local AI
 
-### 🏥 Health Data Integration
+### 🏥 Health Data & Knowledge Integration
 - **Oura Ring Sync**: Real-time sleep, activity, and readiness data
+- **Bee Transcription**: Audio-to-text transcription for note-taking
+- **Limitless Notes**: Access to personal knowledge base and journal entries
 - **Health Analytics**: AI-powered insights from biometric data
 - **Trend Analysis**: Historical health pattern recognition
 - **Privacy First**: Local processing option for sensitive health data
@@ -20,9 +22,12 @@ An advanced Ollama-compatible personal AI assistant that integrates health data 
 - **Web Search**: Real-time information retrieval
 - **Memory Store**: Persistent conversation context
 - **Health Analysis**: Specialized health data processing tools
-- **Smart Routing**: Context-aware tool selection
-- **Modular Architecture**: Server-based MCP implementation
+- **Transcription**: Audio file processing via Bee API
+- **Notes Integration**: Access personal knowledge via Limitless API
+- **Smart Routing**: Advanced context-aware tool selection
+- **Modular Architecture**: Server-based MCP implementation with unified interface
 - **Extensible**: Plugin architecture for custom tools
+- **Streaming Support**: Real-time tool execution with streaming responses
 
 ### 🔒 Privacy & Security
 - **Local Processing**: Ollama integration for sensitive conversations
@@ -37,8 +42,11 @@ An advanced Ollama-compatible personal AI assistant that integrates health data 
 - **Backend**: Express.js + Node.js
 - **Database**: PostgreSQL with Drizzle ORM
 - **AI Providers**: OpenRouter API + Ollama
-- **Health APIs**: Oura Ring v2 API
-- **Real-time**: WebSocket connections
+- **Health & Knowledge APIs**:
+  - Oura Ring v2 API
+  - Bee Transcription API
+  - Limitless AI Pendant API
+- **Real-time**: WebSocket connections + Event-based streaming
 
 ### Project Structure
 ```
@@ -53,15 +61,30 @@ An advanced Ollama-compatible personal AI assistant that integrates health data 
 │   ├── storage.ts          # Database layer
 │   ├── mcp/                # Modern MCP implementation
 │   │   ├── mcpRouter.ts    # Modern MCP router and routing service
-│   │   ├── mcpUtils.ts     # MCP utilities and tool execution
+│   │   ├── mcpSchemaValidator.ts # Request/response schema validation
 │   │   ├── types.ts        # MCP type definitions
+│   │   ├── auth/           # Authentication for MCP servers
 │   │   ├── oura/           # Oura MCP server implementation
 │   │   │   ├── ouraService.ts  # Oura API client
 │   │   │   ├── interfaces.ts   # Oura data interfaces
-│   │   │   └── tools.ts        # Oura MCP tools
+│   │   │   ├── ouraPrompts.ts  # Prompt templates
+│   │   │   ├── ouraMcpServer.ts # MCP server adapter
+│   │   │   └── ouraTools.ts    # Oura MCP tools
+│   │   ├── bee/            # Bee MCP server implementation
+│   │   │   ├── beeClient.ts    # Bee API client
+│   │   │   ├── beePrompts.ts   # Prompt templates 
+│   │   │   ├── beeMcpServer.ts # MCP server adapter
+│   │   │   └── beeTools.ts     # Bee MCP tools
+│   │   ├── limitless/      # Limitless MCP server implementation
+│   │   │   ├── limitlessClient.ts  # Limitless API client
+│   │   │   ├── limitlessPrompts.ts # Prompt templates
+│   │   │   ├── limitlessMcpServer.ts # MCP server adapter
+│   │   │   └── limitlessTools.ts    # Limitless MCP tools
 │   │   └── search/         # Search MCP server implementation
 │   ├── ollama.ts           # Ollama client
 │   ├── openrouter.ts       # OpenRouter client
+│   ├── groq.ts             # Groq client
+│   ├── perplexity.ts       # Perplexity client
 │   └── test/               # Test files
 ├── shared/                 # Shared types and schemas
 │   └── schema.ts           # Database schema and validation
@@ -83,6 +106,10 @@ Create a `.env` file with:
 DATABASE_URL=postgresql://username:password@localhost:5432/cognos
 OURA_TOKEN=your_oura_ring_token
 OPENROUTER_API_KEY=your_openrouter_key  # Optional
+LIMITLESS_API_TOKEN=your_limitless_token  # Optional
+BEE_API_TOKEN=your_bee_token  # Optional
+GROQ_API_KEY=your_groq_api_key  # Optional
+PERPLEXITY_API_KEY=your_perplexity_api_key  # Optional
 ```
 
 ### Installation
