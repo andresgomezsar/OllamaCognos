@@ -399,22 +399,37 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateConfiguration(key: string, value: string): Promise<Configuration | undefined> {
-    const existing = await this.getConfiguration(key);
-    
-    if (!existing) {
-      return undefined;
+    try {
+      const existing = await this.getConfiguration(key);
+      
+      if (!existing) {
+        console.log(`Configuration not found for key: ${key}`);
+        return undefined;
+      }
+      
+      // Debug info about the value being updated
+      console.log(`Updating configuration for ${key} (length: ${value?.length || 0})`);
+      
+      const [updated] = await db
+        .update(configuration)
+        .set({
+          value,
+          updatedAt: new Date()
+        })
+        .where(eq(configuration.key, key))
+        .returning();
+      
+      if (!updated) {
+        console.error(`Failed to update configuration for ${key}. No rows returned.`);
+        return undefined;
+      }
+      
+      console.log(`Successfully updated configuration for ${key}`);
+      return updated;
+    } catch (error) {
+      console.error(`Error updating configuration for key ${key}:`, error);
+      throw error; // Re-throw to let the caller handle it
     }
-    
-    const [updated] = await db
-      .update(configuration)
-      .set({
-        value,
-        updatedAt: new Date()
-      })
-      .where(eq(configuration.key, key))
-      .returning();
-    
-    return updated;
   }
 
   async deleteConfiguration(key: string): Promise<boolean> {

@@ -102,29 +102,64 @@ export function registerRoutes(app: express.Application) {
       const { key } = req.params;
       const { value } = req.body;
       
+      // Debug logging
+      console.log(`Processing update for config key: ${key}`);
+      if (value && value.length > 0) {
+        console.log(`Token length: ${value.length} characters`);
+      }
+      
       // Validate update request
       try {
         configurationUpdateSchema.parse({ key, value });
       } catch (validationError) {
+        console.error(`Validation error for ${key}:`, validationError);
         return res.status(400).json({ error: 'Invalid configuration data', details: validationError });
       }
       
       // Check if config exists
       const existingConfig = await storage.getConfiguration(key);
       if (!existingConfig) {
+        console.log(`Configuration ${key} not found, cannot update`);
         return res.status(404).json({ error: 'Configuration not found' });
       }
       
-      // Update the config
-      const updated = await storage.updateConfiguration(key, value);
-      
-      // Mask encrypted values in the response
-      const safeConfig = {
-        ...updated,
-        value: updated?.encrypted ? '••••••••' : updated?.value
-      };
-      
-      res.json(safeConfig);
+      // Update the config with detailed error handling
+      try {
+        const updated = await storage.updateConfiguration(key, value);
+        console.log(`Successfully updated configuration for ${key}`);
+        
+        // Mask encrypted values in the response
+        const safeConfig = {
+          ...updated,
+          value: updated?.encrypted ? '••••••••' : updated?.value
+        };
+        
+        res.json(safeConfig);
+      } catch (updateError) {
+        console.error(`Database error updating configuration ${key}:`, updateError);
+        
+        // Provide more specific error information
+        let errorMessage = 'Failed to update configuration';
+        let statusCode = 500;
+        
+        // Check for common database errors
+        if (updateError instanceof Error) {
+          if (updateError.message.includes('value too long')) {
+            errorMessage = 'Token value exceeds maximum allowed length';
+            statusCode = 400;
+          } else if (updateError.message.includes('constraint')) {
+            errorMessage = 'Configuration update violated a database constraint';
+            statusCode = 400;
+          }
+          
+          res.status(statusCode).json({ 
+            error: errorMessage,
+            details: updateError.message
+          });
+        } else {
+          res.status(500).json({ error: 'Unknown error updating configuration' });
+        }
+      }
     } catch (error) {
       console.error(`Error updating configuration ${req.params.key}:`, error);
       res.status(500).json({ error: 'Failed to update configuration' });
