@@ -1,5 +1,6 @@
 import { useAuth } from '../lib/auth-context';
-import { useLocation } from 'wouter';
+// Import wouter from our compatibility layer
+const { useLocation } = require("../wouter-compat");
 
 interface LogoutButtonProps {
   className?: string;

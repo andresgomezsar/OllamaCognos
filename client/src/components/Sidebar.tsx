@@ -1,4 +1,5 @@
-import { Link, useLocation } from "wouter";
+// Import wouter from our compatibility layer
+const { Link, useLocation } = require("../wouter-compat");
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { 

@@ -1,12 +1,23 @@
 import express, { type Express } from "express";
 import fs from "fs";
 import path from "path";
-import { createServer as createViteServer, createLogger } from "vite";
 import { type Server } from "http";
-import viteConfig from "../vite.config";
-import { nanoid } from "nanoid";
+// Import vite config using require since it's now in CommonJS format
+const viteConfig = require("../vite.config");
+// Use dynamic import for ESM modules or convert to CommonJS imports
+// Instead of directly importing nanoid and vite, we'll use alternative approaches
 
-const viteLogger = createLogger();
+// Require vite directly since it's mostly used for development
+const vite = require("vite");
+const { customAlphabet } = require('nanoid');
+const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 10);
+
+// Create custom logger similar to Vite's
+const viteLogger = {
+  info: (msg: string) => console.log(`\x1b[32m[vite]\x1b[0m ${msg}`),
+  warn: (msg: string) => console.log(`\x1b[33m[vite]\x1b[0m ${msg}`),
+  error: (msg: string) => console.log(`\x1b[31m[vite]\x1b[0m ${msg}`),
+};
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
@@ -26,30 +37,25 @@ export async function setupVite(app: Express, server: Server) {
     allowedHosts: true,
   };
 
-  const vite = await createViteServer({
+  // Create Vite dev server using require for compatibility
+  const devServer = await vite.createServer({
     ...viteConfig,
     configFile: false,
-    customLogger: {
-      ...viteLogger,
-      error: (msg, options) => {
-        viteLogger.error(msg, options);
-        process.exit(1);
-      },
-    },
+    customLogger: viteLogger,
     server: serverOptions,
     appType: "custom",
   });
 
-  app.use(vite.middlewares);
+  app.use(devServer.middlewares);
   app.use("*", async (req, res, next) => {
     const url = req.originalUrl;
 
     try {
       const clientTemplate = path.resolve(
-        import.meta.dirname,
+        __dirname,
         "..",
         "client",
-        "index.html",
+        "index.html"
       );
 
       // always reload the index.html file from disk incase it changes
@@ -58,17 +64,17 @@ export async function setupVite(app: Express, server: Server) {
         `src="/src/main.tsx"`,
         `src="/src/main.tsx?v=${nanoid()}"`,
       );
-      const page = await vite.transformIndexHtml(url, template);
+      const page = await devServer.transformIndexHtml(url, template);
       res.status(200).set({ "Content-Type": "text/html" }).end(page);
     } catch (e) {
-      vite.ssrFixStacktrace(e as Error);
+      devServer.ssrFixStacktrace(e as Error);
       next(e);
     }
   });
 }
 
 export function serveStatic(app: Express) {
-  const distPath = path.resolve(import.meta.dirname, "public");
+  const distPath = path.resolve(__dirname, "public");
 
   if (!fs.existsSync(distPath)) {
     throw new Error(

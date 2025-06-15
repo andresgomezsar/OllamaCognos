@@ -27,8 +27,13 @@ interface OllamaResponse {
 export class OllamaClient {
   private baseUrl: string;
 
-  constructor(baseUrl: string = "http://localhost:11434") {
-    this.baseUrl = baseUrl.replace(/\/$/, ''); // Remove trailing slash
+  constructor(baseUrl?: string) {
+    // Use OLLAMA_URL from environment if available, fallback to provided baseUrl or default
+    const ollamaUrl = process.env.OLLAMA_URL || baseUrl || "http://localhost:11434";
+    this.baseUrl = ollamaUrl.replace(/\/$/, ''); // Remove trailing slash
+    
+    // Log the Ollama URL being used (helpful for debugging)
+    console.log(`Initializing Ollama client with URL: ${this.baseUrl}`);
   }
 
   async chat(request: OllamaRequest): Promise<OllamaResponse> {
@@ -122,3 +127,6 @@ export class OllamaClient {
 export const createOllamaClient = (baseUrl?: string) => {
   return new OllamaClient(baseUrl);
 };
+
+// Export a singleton instance that uses environment configuration
+export const ollamaClient = createOllamaClient();

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams } from "wouter";
+// Import wouter from our compatibility layer
+const { useParams } = require("../wouter-compat");
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -63,7 +64,13 @@ export default function Chat() {
     refetchInterval: 30000,
   });
 
-  const { data: healthData } = useQuery({
+  interface HealthData {
+    dataType: string;
+    value: any;
+    timestamp?: string;
+  }
+
+  const { data: healthData = [] } = useQuery<HealthData[]>({
     queryKey: ['/api/health', { limit: 5 }],
   });
 

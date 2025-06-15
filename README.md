@@ -1,6 +1,28 @@
 # Cognos - Personal AI Health Assistant
 
+[![TypeScript](https://img.shields.io/badge/TypeScript-4.9-blue)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-18-blue)](https://reactjs.org/)
+[![Express](https://img.shields.io/badge/Express-4.18-green)](https://expressjs.com/)
+[![Ollama](https://img.shields.io/badge/Ollama-0.1.22-orange)](https://ollama.ai/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 An advanced Ollama-compatible personal AI assistant that integrates health data from Oura Ring, Bee transcriptions, and Limitless notes with local LLMs and cloud AI providers for comprehensive AI-powered health insights and analysis.
+
+## Table of Contents
+
+- [Features](#features)
+- [Quick Start](#quick-start)
+- [Architecture](#architecture)
+- [Development](#development)
+- [API Endpoints](#api-endpoints)
+- [AI Provider Routing](#ai-provider-routing)
+- [Health Data Processing](#health-data-processing)
+- [Deployment](#deployment)
+- [MCP and AI Model Integration](#mcp-and-ai-model-integration)
+- [Security Considerations](#security-considerations)
+- [Contributing](#contributing)
+- [License](#license)
+- [Support](#support)
 
 ## Features
 
@@ -34,6 +56,77 @@ An advanced Ollama-compatible personal AI assistant that integrates health data 
 - **Data Encryption**: Secure storage of health information
 - **Audit Logging**: Complete action tracking
 - **User Consent**: Granular permission controls
+
+## Quick Start
+
+### Using the Startup Script
+A convenient shell script is included to start the OllamaCognos server and open it in your browser automatically:
+
+```bash
+# Make sure the script is executable
+chmod +x start-cognos.sh
+
+# Start the server with one command
+./start-cognos.sh
+```
+
+The script will:
+1. Start the Node.js server with `npm run dev`
+2. Show a notification when the server is starting
+3. Automatically open your default browser to http://localhost:3000
+
+### Creating a macOS App (Automator)
+To create a clickable macOS application for starting OllamaCognos:
+
+1. Open Automator from Applications
+2. Select "Application" as the document type
+3. Add a "Run Shell Script" action
+4. Enter the following script:
+   ```bash
+   cd /Users/andresgomezsarmiento/Documents/GitHub/OllamaCognos
+   npm run dev &
+   sleep 5
+   open http://localhost:3000
+   ```
+5. Save as "OllamaCognos.app" to your Applications folder
+6. Now you can start the server by clicking the app icon
+
+## Environment Setup
+
+### Required Environment Variables
+Copy `.env.example` to `.env` and configure the following variables:
+
+```bash
+# Server Configuration
+PORT=3000                       # Server port (default: 3000)
+SESSION_SECRET=your-secret      # Secret for session encryption
+
+# AI Providers
+OLLAMA_URL=http://localhost:11434  # Ollama API URL (or ngrok URL for remote access)
+OPENROUTER_API_KEY=your-key     # OpenRouter API key for cloud models
+
+# MCP Services
+OURA_ACCESS_TOKEN=your-token    # Oura Ring API access token
+BEE_API_TOKEN=your-token        # Bee Transcription API token
+LIMITLESS_TOKEN=your-token      # Limitless API token for notes access
+```
+
+### Setting Up Ollama
+
+#### Local Installation
+1. Install Ollama from [ollama.ai](https://ollama.ai)
+2. Start the Ollama service
+3. Pull recommended models:
+   ```bash
+   ollama pull deepseek-r1:32b
+   ollama pull qwen3:30b
+   ```
+
+#### Remote Access via Ngrok
+To access Ollama from outside your local network or from mobile devices:
+1. Install ngrok
+2. Run: `ngrok http 11434`
+3. Set `OLLAMA_URL` in `.env` to your ngrok URL
 
 ## Architecture
 
@@ -268,21 +361,78 @@ MIT License - see LICENSE file for details
 
 ## MCP and AI Model Integration
 
+### What is MCP?
+MCP (Model Context Protocol) provides a standardized interface for AI models to access external tools and data sources. In OllamaCognos, the MCP implementation allows both local and cloud AI models to interact with services like Oura Ring, Bee Transcription, and Limitless Notes using consistent patterns.
+
+```
++----------------+         +-------------------+         +------------------+
+|                |         |                   |         |                  |
+|  User Request  |-------->|  LLM Processing   |-------->|  MCP Interface   |
+|                |         |  (Ollama/OpenAI)  |<--------|  (Tool Router)   |
++----------------+         +-------------------+         +------------------+
+                                                              |
+                                                              v
+                           +--------------------------------------------------+
+                           |                                                  |
+                           |  +-------------+  +------------+  +------------+ |
+                           |  |             |  |            |  |            | |
+                           |  | Oura MCP    |  | Bee MCP    |  | Limitless  | |
+                           |  | Server      |  | Server     |  | MCP Server | |
+                           |  |             |  |            |  |            | |
+                           |  +-------------+  +------------+  +------------+ |
+                           |                                                  |
+                           +--------------------------------------------------+
+```
+
 ### Function Calling Architecture
+- **Unified Interface**: Common `McpServerWithRouter` interface ensures all services implement required methods
 - **Adapter Pattern**: Translates MCP server tools to Ollama/OpenRouter function calls
 - **Smart Routing**: Context-aware tool selection based on message content
 - **Function Schema**: OpenAI-compatible function calling format
+- **Streaming Support**: Real-time responses during tool execution
 
-### Workflow
+### MCP Workflow
 1. **User Query**: Sent to Ollama/OpenRouter models
 2. **Tool Selection**: Relevant MCP tools activated based on query context
-3. **Function Calling**: AI model invokes appropriate function
-4. **Data Retrieval**: MCP servers retrieve and process data (Oura, Web Search, etc.)
+3. **Function Calling**: AI model invokes appropriate function through the MCP Router
+4. **Data Retrieval**: Specific MCP server (Oura, Bee, Limitless) handles the request
 5. **Response Generation**: AI incorporates tool results into final response
+
+### Key MCP Components
+
+- **mcpRouter**: Central routing service that directs requests to appropriate MCP servers
+- **mcpSchemaValidator**: Ensures requests and responses follow schema standards
+- **MCP Servers**: Individual servers for each integrated service (Oura, Bee, Limitless)
+- **Tool Definitions**: Structured descriptions of available functions for each service
 
 ### Supported AI Providers
 - **Ollama**: Local AI with function calling support
 - **OpenRouter**: Cloud-based models with advanced reasoning
+
+## Troubleshooting
+
+### Common Issues
+
+#### Connection to Ollama fails
+- Verify Ollama service is running (`ps aux | grep ollama`)
+- Check `OLLAMA_URL` in `.env` matches your Ollama endpoint
+- If using ngrok, ensure the URL is current (ngrok URLs expire)
+- Run the test script: `node test-ollama-connection.js`
+
+#### TypeScript Compilation Errors
+- Run `npx tsc --noEmit` to identify specific errors
+- Check for ESM/CommonJS mismatches in import statements
+- Ensure type definitions are properly loaded
+
+#### WebSocket Connection Issues
+- Verify the client is correctly connecting to `/ws` endpoint
+- Check authentication token is properly configured
+- In development, the server defaults to `userId: 1`
+
+#### MCP Tool Errors
+- Examine server logs for detailed error messages
+- Verify all required environment variables for the specific MCP service
+- Check that the MCP server implements the `McpServerWithRouter` interface
 
 ## Support
 

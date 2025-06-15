@@ -1,4 +1,13 @@
-import { Request, Response, NextFunction } from 'express';
+import express, { NextFunction, Request, Response } from 'express';
+import session from 'express-session';
+
+// Extend SessionData to include userId
+declare module 'express-session' {
+  interface SessionData {
+    userId?: number;
+  }
+}
+
 import { TokenStore } from './authProvider';
 
 /**

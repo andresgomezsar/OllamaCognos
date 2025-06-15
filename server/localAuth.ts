@@ -1,7 +1,9 @@
 import fs from 'fs';
 import path from 'path';
 import bcrypt from 'bcryptjs';
-import { nanoid } from 'nanoid';
+// Use CommonJS require for nanoid instead of ESM import
+const { customAlphabet } = require('nanoid');
+const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 10);
 
 // Define user type
 export interface User {

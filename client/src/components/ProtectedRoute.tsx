@@ -1,5 +1,6 @@
 import { ReactNode, useEffect } from 'react';
-import { useLocation } from 'wouter';
+// Import wouter from our compatibility layer
+const { useLocation } = require("../wouter-compat");
 import { useAuth } from '../lib/auth-context';
 
 interface ProtectedRouteProps {

@@ -1,4 +1,5 @@
-import { Switch, Route, Redirect } from "wouter";
+// Import wouter from our compatibility layer
+const { Switch, Route, Redirect } = require("./wouter-compat");
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -76,7 +77,7 @@ function Router() {
       </Route>
       
       <Route path="/chat/:conversationId">
-        {(params) => (
+        {(params: { conversationId: string }) => (
           <ProtectedLayout>
             <Chat key={params.conversationId} />
           </ProtectedLayout>

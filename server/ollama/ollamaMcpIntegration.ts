@@ -10,10 +10,22 @@ import { mcpServers } from '../mcp/mcpRouter';
 import { ouraTools } from '../mcp/oura/ouraTools';
 import { executeMCPTool } from '../mcp/mcpUtils';
 import { OllamaClient } from '../ollama';
+import { Tool } from '../mcp/types';
 
 /**
  * Type definitions for Ollama function calling
  */
+
+// Extended Ollama message type to support function calling
+interface OllamaMessage {
+  role: string;
+  content: string;
+  tool_calls?: Array<{
+    id: string;
+    name: string;
+    arguments: string;
+  }>;
+}
 export interface OllamaFunctionDefinition {
   name: string;
   description: string;
@@ -58,22 +70,24 @@ export function createMcpFunctionDefinitions(): OllamaFunctionDefinition[] {
     };
     
     // Convert input schema to Ollama parameters
-    if (tool.input_schema && tool.input_schema.properties) {
-      for (const [key, prop] of Object.entries(tool.input_schema.properties)) {
+    if (tool.inputSchema && tool.inputSchema.properties) {
+      for (const [key, prop] of Object.entries(tool.inputSchema.properties)) {
+        // Cast unknown property to expected shape and use default values if missing
+        const typedProp = prop as { type?: string; description?: string; enum?: string[] };
         definition.parameters.properties[key] = {
-          type: prop.type || 'string',
-          description: prop.description || ''
+          type: typedProp.type || 'string',
+          description: typedProp.description || ''
         };
         
         // Add enum if available
-        if (prop.enum) {
-          definition.parameters.properties[key].enum = prop.enum;
+        if (typedProp.enum) {
+          definition.parameters.properties[key].enum = typedProp.enum;
         }
       }
       
       // Add required parameters
-      if (tool.input_schema.required) {
-        definition.parameters.required = tool.input_schema.required;
+      if (tool.inputSchema.required) {
+        definition.parameters.required = tool.inputSchema.required;
       }
     }
     
@@ -169,8 +183,10 @@ export function enhanceOllamaWithMcp(ollama: OllamaClient): OllamaClient {
     const response = await originalChat(options);
     
     // If the response includes a tool call, process it
-    if (response.message?.tool_calls?.length > 0) {
-      for (const toolCall of response.message.tool_calls) {
+    const message = response.message as OllamaMessage;
+    const toolCalls = message?.tool_calls || [];
+    if (toolCalls.length > 0) {
+      for (const toolCall of toolCalls) {
         if (toolCall.name.startsWith('mcp_')) {
           try {
             // Process MCP function call
