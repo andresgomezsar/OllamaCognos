@@ -35,29 +35,26 @@ async function runTest() {
     console.log(`Found ${tools.length} tools:`);
     
     // Find the Cognos tools
-    const cognosTools = tools.filter(tool => 
+    const cognosTools = tools.filter((tool: { name: string }) => 
       tool.name === 'process_cognos_audio' || 
       tool.name === 'stream_omi_audio');
       
-    console.log('Cognos tools:', cognosTools.map(t => t.name));
+    console.log('Cognos tools:', cognosTools.map((t: { name: string }) => t.name));
     
-    if (!cognosTools.includes(tool => tool.name === 'stream_omi_audio')) {
+    if (!cognosTools.some((tool: { name: string }) => tool.name === 'stream_omi_audio')) {
       console.error('stream_omi_audio tool not found!');
       process.exit(1);
     }
     
     // Call the stream_omi_audio tool
     console.log('Testing stream_omi_audio tool...');
-    const streamResult = await client.callTool({
-      name: 'stream_omi_audio',
-      parameters: {
+    const streamResult = await client.call('stream_omi_audio', {
         // Use mock device since this is just a test
         device_id: 'mock', 
         duration_seconds: 5,
         enable_vad: true,
         enable_diarization: true,
         enable_transcription: true
-      }
     });
     
     // Write results to a file
