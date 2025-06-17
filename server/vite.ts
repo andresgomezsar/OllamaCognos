@@ -2,14 +2,15 @@ import express, { type Express } from "express";
 import fs from "fs";
 import path from "path";
 import { type Server } from "http";
-// Import vite config using require since it's now in CommonJS format
-const viteConfig = require("../vite.config");
-// Use dynamic import for ESM modules or convert to CommonJS imports
-// Instead of directly importing nanoid and vite, we'll use alternative approaches
+import * as vite from "vite";
+import { customAlphabet } from 'nanoid';
 
-// Require vite directly since it's mostly used for development
-const vite = require("vite");
-const { customAlphabet } = require('nanoid');
+// ESM compatibility: use process.cwd() as base path instead of __dirname
+const serverDir = path.join(process.cwd(), 'server');
+const projectRoot = process.cwd();
+// Handle vite configuration using a dynamic import approach
+// No direct import of .ts files to avoid TypeScript errors
+let viteConfig = {};
 const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 10);
 
 // Create custom logger similar to Vite's
@@ -37,7 +38,15 @@ export async function setupVite(app: Express, server: Server) {
     allowedHosts: true,
   };
 
-  // Create Vite dev server using require for compatibility
+  // Load vite config dynamically
+  try {
+    const viteConfigModule = await import("../vite.config.js");
+    viteConfig = viteConfigModule.default || viteConfigModule;
+  } catch (e) {
+    console.warn("Could not load vite config, using defaults", e);
+  }
+
+  // Create Vite dev server
   const devServer = await vite.createServer({
     ...viteConfig,
     configFile: false,
@@ -49,11 +58,15 @@ export async function setupVite(app: Express, server: Server) {
   app.use(devServer.middlewares);
   app.use("*", async (req, res, next) => {
     const url = req.originalUrl;
+    
+    // Skip API routes to ensure they're handled by their own handlers
+    if (url.startsWith('/api/')) {
+      return next();
+    }
 
     try {
       const clientTemplate = path.resolve(
-        __dirname,
-        "..",
+        projectRoot,
         "client",
         "index.html"
       );
@@ -74,7 +87,7 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  const distPath = path.resolve(__dirname, "public");
+  const distPath = path.resolve(serverDir, "public");
 
   if (!fs.existsSync(distPath)) {
     throw new Error(

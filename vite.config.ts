@@ -1,20 +1,24 @@
-// Vite config in CommonJS format
-const path = require("path");
-const react = require("@vitejs/plugin-react");
+// Vite config in universal format (works in both ESM and CommonJS)
+import path from "path";
+import react from "@vitejs/plugin-react";
+
+// Use process.cwd() instead of __dirname for path resolution
+// This isn't exactly the same but works in both ESM and CommonJS
+const projectRoot = process.cwd();
 
 /** @type {import('vite').UserConfig} */
 const config = {
   plugins: [react()],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "client", "src"),
-      "@shared": path.resolve(__dirname, "shared"),
-      "@assets": path.resolve(__dirname, "attached_assets"),
+      "@": path.resolve(projectRoot, "client", "src"),
+      "@shared": path.resolve(projectRoot, "shared"),
+      "@assets": path.resolve(projectRoot, "attached_assets"),
     },
   },
-  root: path.resolve(__dirname, "client"),
+  root: path.resolve(projectRoot, "client"),
   build: {
-    outDir: path.resolve(__dirname, "dist/public"),
+    outDir: path.resolve(projectRoot, "dist/public"),
     emptyOutDir: true,
   },
   server: {
@@ -25,4 +29,4 @@ const config = {
   },
 };
 
-module.exports = config;
+export default config;

@@ -99,6 +99,10 @@ Copy `.env.example` to `.env` and configure the following variables:
 ```bash
 # Server Configuration
 PORT=3000                       # Server port (default: 3000)
+
+# Cognos Audio Pipeline
+COGNOS_PYTHON_PATH=python       # Path to Python executable (default: python)
+COGNOS_PIPELINE_PATH=/path/to/cognos_pipeline  # Path to cognos_pipeline directory
 SESSION_SECRET=your-secret      # Secret for session encryption
 
 # AI Providers
@@ -282,6 +286,46 @@ curl "/api/health?dataType=sleep&limit=7"
 
 ## Health Data Processing
 
+### Cognos Audio Processing
+- **Universal Audio Pipeline**: Process any audio file through VAD, diarization, and transcription
+- **Omi Necklace Integration**: Stream audio directly from Omi wearable devices via BLE
+- **Real-time Processing**: Live audio processing for ambient computing
+- **JSON Output**: Structured data format for AI analysis
+
+#### Setup Requirements
+```bash
+# Install Python dependencies
+pip install numpy librosa pyannote.audio torch transformers
+
+# For Omi device streaming (optional)
+pip install bleak asyncio
+
+# Configure Omi BLE UUIDs in your .env file
+OMI_SERVICE_UUID=0000180d-0000-1000-8000-00805f9b34fb  # Heart Rate service example
+OMI_AUDIO_CHAR_UUID=00002a37-0000-1000-8000-00805f9b34fb  # Audio characteristic example
+OMI_CONTROL_CHAR_UUID=00002a39-0000-1000-8000-00805f9b34fb  # Control characteristic example
+```
+
+#### Usage Examples
+```typescript
+// Process an audio file
+await mcpRouter.executeMCPTool('cognos', 'process_cognos_audio', {
+  audio_file_path: '/path/to/recording.wav',
+  enable_vad: true,
+  enable_diarization: true,
+  enable_transcription: true
+});
+
+// Stream from Omi device (if available)
+await mcpRouter.executeMCPTool('cognos', 'stream_omi_audio', {
+  device_id: 'optional-device-id',
+  duration_seconds: 30,
+  enable_vad: true,
+  enable_diarization: true,
+  enable_transcription: true
+});
+```
+
 ### Oura Ring Integration
 - **Sleep Data**: Duration, efficiency, stages, heart rate
 - **Activity Data**: Steps, calories, active time
@@ -380,6 +424,13 @@ MCP (Model Context Protocol) provides a standardized interface for AI models to 
                            |  | Server      |  | Server     |  | MCP Server | |
                            |  |             |  |            |  |            | |
                            |  +-------------+  +------------+  +------------+ |
+                           |                                                  |
+                           |  +-------------+                                 |
+                           |  |             |                                 |
+                           |  | Cognos MCP  |                                 |
+                           |  | Server      |                                 |
+                           |  |             |                                 |
+                           |  +-------------+                                 |
                            |                                                  |
                            +--------------------------------------------------+
 ```
