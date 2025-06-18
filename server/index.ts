@@ -87,9 +87,9 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     serveStatic(app);
   }
 
-  // Use port 3000 for local development
+  // Use port 3001 for local development (3000 is often in use)
   // this serves both the API and the client.
-  const port = 3000;
+  const port = process.env.PORT ? parseInt(process.env.PORT) : 3001;
   server.listen({
     port,
     host: "localhost",

@@ -40,7 +40,7 @@ cognosServer.tool("process_cognos_memory",
     
     try {
       // Step 1: Prepare audio input based on source
-      let audioPath: string;
+      let audioPath: string = '';
       
       switch (audio_source) {
         case "file":
@@ -97,7 +97,7 @@ cognosServer.tool("process_cognos_memory",
           type: "text", 
           text: JSON.stringify({
             error: "Cognos processing failed",
-            message: error.message,
+            message: error instanceof Error ? error.message : String(error),
             processing_time_ms: Date.now() - startTime
           })
         }]
@@ -146,7 +146,7 @@ cognosServer.tool("connect_omi_device",
           type: "text",
           text: JSON.stringify({
             error: "Omi device connection failed",
-            message: error.message
+            message: error instanceof Error ? error.message : String(error)
           })
         }]
       };
@@ -185,7 +185,7 @@ cognosServer.tool("get_cognos_biomarkers",
           text: JSON.stringify({
             cognos_biomarkers: {
               time_range: time_range,
-              data_sources: Object.keys(data_sources).filter(key => data_sources[key]),
+              data_sources: Object.keys(data_sources).filter(key => key in data_sources && data_sources[key as keyof typeof data_sources]),
               biomarker_data: biomarkerResults,
               analysis: analysis,
               cognitive_insights: await generateCognitiveInsights(null, biomarkerResults)
@@ -199,7 +199,7 @@ cognosServer.tool("get_cognos_biomarkers",
           type: "text",
           text: JSON.stringify({
             error: "Biomarker collection failed",
-            message: error.message
+            message: error instanceof Error ? error.message : String(error)
           })
         }]
       };
@@ -208,25 +208,28 @@ cognosServer.tool("get_cognos_biomarkers",
 );
 
 // Resource: Cognos Platform Status
-cognosServer.resource("cognos_platform_status",
-  async () => ({
-    uri: "cognos://platform/status",
-    name: "Cognos Platform System Status",
-    mimeType: "application/json"
-  }),
+cognosServer.resource(
+  "cognos_platform_status",
+  "cognos://platform/status",
   async () => {
     const status = await getCognosPlatformStatus();
-    return JSON.stringify({
-      cognos_platform: {
-        audio_processing: status.audioProcessingStatus,
-        device_connections: status.connectedDevices,
-        biomarker_integrations: status.biomarkerSources,
+    const statusData = {
+      cognos_status: {
+        connected_devices: status.connectedDevices,
+        biomarker_sources: status.biomarkerSources,
         ai_processing: status.aiProcessingStatus,
         memory_storage: status.memoryStorageStatus,
         uptime: status.uptime,
         last_updated: new Date().toISOString()
       }
-    });
+    };
+    return {
+      contents: [{
+        text: JSON.stringify(statusData),
+        uri: "cognos://platform/status",
+        mimeType: "application/json"
+      }]
+    };
   }
 );
 
@@ -260,7 +263,7 @@ async function processLimitlessDevice(deviceId: string): Promise<string> {
 
 async function processLiveStream(audioData: string): Promise<string> {
   // Handle live audio stream (base64 encoded)
-  const tempDir = path.join(process.env.COGNOS_PATH, 'temp');
+  const tempDir = path.join(process.env.COGNOS_PATH || process.cwd(), 'temp');
   await fs.mkdir(tempDir, { recursive: true });
   
   const tempFile = path.join(tempDir, `livestream_${Date.now()}.wav`);
@@ -334,5 +337,12 @@ async function getCognosPlatformStatus() {
 
 // Start the Cognos MCP Server
 const transport = new StdioServerTransport();
-await cognosServer.connect(transport);
-console.log("Cognos Universal Memory Platform MCP Server started");
+
+// Export a function to connect instead of using top-level await
+export async function startCognosServer() {
+  await cognosServer.connect(transport);
+  console.log("Cognos Universal Memory Platform MCP Server started");
+}
+
+// Export the server for external use
+export default cognosServer;

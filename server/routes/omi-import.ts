@@ -1,7 +1,8 @@
 import * as express from 'express';
 import { Request, Response } from 'express';
 // Import multer with type definitions
-import multer = require('multer');
+import _multer from 'multer';
+const multer = _multer as any; // Type assertion to handle CommonJS/ESM compatibility
 import { FileFilterCallback } from 'multer';
 import * as path from 'path';
 import * as fsPromises from 'fs/promises';
