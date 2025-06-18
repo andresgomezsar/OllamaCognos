@@ -41,6 +41,8 @@ import { ngrokService } from "./ngrok";
 import { executeMCPTool } from "/Users/andresgomezsarmiento/Documents/GitHub/OllamaCognos/server/mcp/mcpUtils";
 import { createOllamaClient, createOpenRouterClient, listMCPTools } from "./clients/clientUtils";
 import { LimitlessClient } from "./limitless";
+import { omiWebhookRouter } from "./routes/omi-webhooks";
+import { omiImportRouter } from "./routes/omi-import";
 
 export function registerRoutes(app: express.Application) {
   const server = http.createServer(app);
@@ -51,6 +53,12 @@ export function registerRoutes(app: express.Application) {
   
   // Register MCP routes
   app.use('/api/mcp', mcpRouter);
+  
+  // Register Omi webhook routes
+  app.use('/api/omi/webhook', omiWebhookRouter);
+  
+  // Register Omi import routes
+  app.use('/api/omi/import', omiImportRouter);
   
   // Configuration Management Endpoints
   app.get('/api/config', isAuthenticated, async (req: Request, res: Response) => {

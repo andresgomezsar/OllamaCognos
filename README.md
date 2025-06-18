@@ -119,6 +119,85 @@ LIMITLESS_TOKEN=your-token
 
 Optional: For remote access, use ngrok: `ngrok http 11434` and update `OLLAMA_URL` in `.env`
 
+## Universal Memory Platform
+
+Cognos Universal Memory Platform is a device-agnostic AI software layer for physical and mental augmentation. It creates a standardized protocol for AI tools to interact with audio processing, biomarker data, and wearable device integrations.
+
+### Omi Necklace Integration
+
+The platform supports Omi devices for audio capture and real-time transcription:
+
+- **Device Discovery**: Scan and connect to available Omi necklaces
+- **Audio Streaming**: Capture audio from Omi devices in real-time
+- **Webhook Integration**: Process real-time transcripts, conversation events, and more via webhooks
+- **Conversation Import**: Import existing conversations from Omi exports
+- **Simulation Mode**: Develop and test without physical devices
+
+#### Webhook Endpoints
+
+Configure your Omi necklace app to send data to the following webhook endpoints:
+
+| Feature | Endpoint | Description |
+|---------|----------|-------------|
+| Real-time Transcript | `/api/omi/webhook/realtime-transcript` | Receives transcript chunks as they're generated |
+| Conversation Events | `/api/omi/webhook/conversation-events` | Notifies of conversation start/end events |
+| Audio Bytes | `/api/omi/webhook/audio-bytes` | Streams raw audio data for processing |
+| Day Summary | `/api/omi/webhook/day-summary` | Provides daily conversation summaries |
+| Webhook Status | `/api/omi/webhook/status` | Checks webhook configuration status |
+
+#### Importing Omi Conversations
+
+You can import existing conversations from the Omi necklace app:
+
+1. Export conversations from the Omi app to a `conversations.json` file
+2. Navigate to the Omi Integration page at `/omi-integration`
+3. Use the drag-and-drop importer to upload your export file
+4. The system will process and integrate your conversations
+
+### Biomarker Integration
+
+Integrate health data from multiple sources:
+
+- **Oura Ring**: Sleep quality, readiness, and activity metrics
+- **Limitless Pendant**: Voice features, conversation metrics, and cognitive load
+- **Apple Health**: Heart rate, steps, workouts, and energy expenditure
+- **Cognitive Insights**: AI-generated analysis combining audio and health data
+
+### MCP Tool Commands
+
+- `process_cognos_memory`: Process audio from various sources with optional biomarker integration
+- `connect_omi_device`: Scan for and connect to Omi devices
+- `get_cognos_biomarkers`: Retrieve health data from connected devices
+
+#### Example Usage
+
+```javascript
+// Connect to an Omi device and start streaming
+const response = await mcpClient.executeRemoteTool({
+  server: "cognos-universal-memory",
+  tool: "connect_omi_device",
+  params: {
+    scan_mode: true,  // Set to false to connect to a specific device
+    device_id: null,   // Provide device_id when scan_mode is false
+    webhook_url: "https://your-server.com/api/omi/webhook/realtime-transcript"
+  }
+});
+
+// Process memory from an Omi device
+const result = await mcpClient.executeRemoteTool({
+  server: "cognos-universal-memory",
+  tool: "process_cognos_memory",
+  params: {
+    source: "omi_device",
+    device_id: "your-device-id",
+    include_biomarkers: true,
+    generate_insights: true
+  }
+});
+```
+
+See the [API Reference](#api-reference) for detailed documentation.
+
 ## Architecture
 
 ### Technology Stack

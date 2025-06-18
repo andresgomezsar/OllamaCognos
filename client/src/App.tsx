@@ -11,6 +11,7 @@ import Chat from "@/pages/chat";
 import Settings from "@/pages/settings";
 import Health from "@/pages/health";
 import Integrations from "@/pages/integrations";
+import OmiIntegration from "@/pages/omi-integration";
 import NotFound from "@/pages/not-found";
 import Login from "@/pages/login";
 import { AuthProvider } from "./lib/auth-context";
@@ -99,6 +100,12 @@ function Router() {
       <Route path="/integrations">
         <ProtectedLayout>
           <Integrations />
+        </ProtectedLayout>
+      </Route>
+      
+      <Route path="/omi-integration">
+        <ProtectedLayout>
+          <OmiIntegration />
         </ProtectedLayout>
       </Route>
       
