@@ -1,10 +1,11 @@
-import express from 'express';
+import * as express from 'express';
 import { Request, Response } from 'express';
 // Import multer with type definitions
-import multer, { FileFilterCallback } from 'multer';
-import path from 'path';
-import fs from 'fs/promises';
-import { nanoid } from 'nanoid';
+import multer = require('multer');
+import { FileFilterCallback } from 'multer';
+import * as path from 'path';
+import * as fsPromises from 'fs/promises';
+import { nanoid } from '../../shared/utils/nanoid-compat';
 import { EventEmitter } from 'events';
 
 // Import event emitter from webhooks to maintain consistency
@@ -45,7 +46,7 @@ const upload = multer({
 // Helper function to ensure upload directory exists
 async function ensureUploadDir() {
   const uploadDir = path.join(process.cwd(), 'temp', 'uploads');
-  await fs.mkdir(uploadDir, { recursive: true });
+  await fsPromises.mkdir(uploadDir, { recursive: true });
   return uploadDir;
 }
 
@@ -63,7 +64,7 @@ router.post('/conversations', upload.single('file'), async (req: MulterRequest, 
 
     // Read and parse the uploaded JSON file
     const filePath = req.file.path;
-    const fileContent = await fs.readFile(filePath, 'utf8');
+    const fileContent = await fsPromises.readFile(filePath, 'utf8');
     let conversations;
     
     try {
@@ -110,7 +111,7 @@ router.post('/conversations', upload.single('file'), async (req: MulterRequest, 
     });
 
     // Clean up uploaded file asynchronously
-    fs.unlink(filePath).catch(err => {
+    fsPromises.unlink(filePath).catch(err => {
       console.error('Error cleaning up uploaded file:', err);
     });
 

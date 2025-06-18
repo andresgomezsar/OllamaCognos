@@ -1,8 +1,8 @@
-import express from 'express';
+import * as express from 'express';
 import { Request, Response } from 'express';
-import fs from 'fs/promises';
-import path from 'path';
-import { nanoid } from 'nanoid';
+import * as fsPromises from 'fs/promises';
+import * as path from 'path';
+import { nanoid } from '../../shared/utils/nanoid-compat';
 import { EventEmitter } from 'events';
 
 // Webhook event emitter for real-time communication
@@ -150,9 +150,9 @@ router.post('/audio-bytes', async (req: Request, res: Response) => {
     // For larger files, consider saving to disk
     if (audioBuffer.length > 1024 * 1024) { // > 1MB
       const tempDir = path.join(process.cwd(), 'temp', 'audio');
-      await fs.mkdir(tempDir, { recursive: true });
+      await fsPromises.mkdir(tempDir, { recursive: true });
       const filePath = path.join(tempDir, `${audioId}.${req.body.format || 'wav'}`);
-      await fs.writeFile(filePath, audioBuffer);
+      await fsPromises.writeFile(filePath, audioBuffer);
       
       // Emit event with file path instead of buffer
       webhookEvents.emit('audio-bytes', {

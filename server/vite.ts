@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 import { type Server } from "http";
 import * as vite from "vite";
-import { customAlphabet } from 'nanoid';
+import { customAlphabet } from '../shared/utils/nanoid-compat';
 
 // ESM compatibility: use process.cwd() as base path instead of __dirname
 const serverDir = path.join(process.cwd(), 'server');
