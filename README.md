@@ -59,8 +59,18 @@ An advanced Ollama-compatible personal AI assistant that integrates health data 
 
 ## Quick Start
 
-### Using the Startup Script
-A convenient shell script is included to start the OllamaCognos server and open it in your browser automatically:
+### Starting the Server
+You can start the OllamaCognos server with the following commands:
+
+```bash
+# Start the development server
+npm run dev
+
+# Access the application in your browser
+open http://localhost:3000
+```
+
+Alternatively, you can use the included startup script that handles both steps:
 
 ```bash
 # Make sure the script is executable
@@ -70,54 +80,35 @@ chmod +x start-cognos.sh
 ./start-cognos.sh
 ```
 
-The script will:
-1. Start the Node.js server with `npm run dev`
-2. Show a notification when the server is starting
-3. Automatically open your default browser to http://localhost:3000
-
-### Creating a macOS App (Automator)
-To create a clickable macOS application for starting OllamaCognos:
-
-1. Open Automator from Applications
-2. Select "Application" as the document type
-3. Add a "Run Shell Script" action
-4. Enter the following script:
-   ```bash
-   cd /Users/andresgomezsarmiento/Documents/GitHub/OllamaCognos
-   npm run dev &
-   sleep 5
-   open http://localhost:3000
-   ```
-5. Save as "OllamaCognos.app" to your Applications folder
-6. Now you can start the server by clicking the app icon
-
 ## Environment Setup
 
-### Required Environment Variables
-Copy `.env.example` to `.env` and configure the following variables:
+### Configuration
+Create a `.env` file in the root directory by copying the example:
+
+```bash
+# Copy the example environment file
+cp .env.example .env
+```
+
+Then edit the `.env` file to configure:
 
 ```bash
 # Server Configuration
-PORT=3000                       # Server port (default: 3000)
-
-# Cognos Audio Pipeline
-COGNOS_PYTHON_PATH=python       # Path to Python executable (default: python)
-COGNOS_PIPELINE_PATH=/path/to/cognos_pipeline  # Path to cognos_pipeline directory
-SESSION_SECRET=your-secret      # Secret for session encryption
+PORT=3000
+SESSION_SECRET=your-secret
 
 # AI Providers
-OLLAMA_URL=http://localhost:11434  # Ollama API URL (or ngrok URL for remote access)
-OPENROUTER_API_KEY=your-key     # OpenRouter API key for cloud models
+OLLAMA_URL=http://localhost:11434
+OPENROUTER_API_KEY=your-key
 
-# MCP Services
-OURA_ACCESS_TOKEN=your-token    # Oura Ring API access token
-BEE_API_TOKEN=your-token        # Bee Transcription API token
-LIMITLESS_TOKEN=your-token      # Limitless API token for notes access
+# Health Services
+OURA_ACCESS_TOKEN=your-token
+BEE_API_TOKEN=your-token
+LIMITLESS_TOKEN=your-token
 ```
 
 ### Setting Up Ollama
 
-#### Local Installation
 1. Install Ollama from [ollama.ai](https://ollama.ai)
 2. Start the Ollama service
 3. Pull recommended models:
@@ -126,11 +117,7 @@ LIMITLESS_TOKEN=your-token      # Limitless API token for notes access
    ollama pull qwen3:30b
    ```
 
-#### Remote Access via Ngrok
-To access Ollama from outside your local network or from mobile devices:
-1. Install ngrok
-2. Run: `ngrok http 11434`
-3. Set `OLLAMA_URL` in `.env` to your ngrok URL
+Optional: For remote access, use ngrok: `ngrok http 11434` and update `OLLAMA_URL` in `.env`
 
 ## Architecture
 
