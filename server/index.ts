@@ -47,16 +47,29 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
+// Add global unhandled promise rejection handler
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+});
+
 (async () => {
+  console.log('Server starting...');
   // Initialize authentication system
+  console.log('Initializing auth system...');
   await initializeAuth(app);
   
   // Register authentication routes
   app.use('/api/auth', authRoutes);
   
   // Initialize admin user if none exists
+  console.log('Initializing admin user if needed...');
   await initializeAdminUser();
   
+  console.log('Registering routes...');
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
@@ -82,8 +95,10 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
   if (app.get("env") === "development") {
+    console.log('Setting up Vite development middleware...');
     await setupVite(app, server);
   } else {
+    console.log('Setting up static file serving...');
     serveStatic(app);
   }
 
@@ -94,9 +109,14 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     port,
     host: "localhost",
   }, async () => {
+    console.log(`Server is now running on http://localhost:${port}`);
     log(`serving on port ${port}`);
     
     // Initialize ngrok after server starts
+    console.log('Initializing ngrok tunnel...');
     await initializeNgrok();
+    console.log('Server initialization complete');
   });
-})();
+})().catch((error: unknown) => {
+  console.error('Caught error in main IIFE:', error);
+});

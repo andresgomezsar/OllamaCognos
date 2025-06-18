@@ -1,0 +1,97 @@
+{
+  "conversations": [
+    {
+      "id": "test-conv-001",
+      "title": "Morning Discussion with Team",
+      "date": "2025-06-17T09:15:00Z",
+      "participants": [
+        {
+          "id": "user-123",
+          "name": "Current User"
+        },
+        {
+          "id": "user-456",
+          "name": "Sarah Chen"
+        },
+        {
+          "id": "user-789",
+          "name": "Alex Rodriguez"
+        }
+      ],
+      "transcript": [
+        {
+          "speaker": "Current User",
+          "timestamp": "2025-06-17T09:15:30Z",
+          "text": "Let's review the progress on the Cognos project."
+        },
+        {
+          "speaker": "Sarah Chen",
+          "timestamp": "2025-06-17T09:16:05Z",
+          "text": "The webhook integration is complete and all tests are passing."
+        },
+        {
+          "speaker": "Alex Rodriguez",
+          "timestamp": "2025-06-17T09:16:45Z",
+          "text": "I've finished the UI components for the conversation importer."
+        },
+        {
+          "speaker": "Current User",
+          "timestamp": "2025-06-17T09:17:20Z",
+          "text": "Great progress! Let's plan to deploy by the end of the week."
+        }
+      ],
+      "duration_seconds": 537,
+      "location": "Virtual Meeting",
+      "metadata": {
+        "sentiment": "positive",
+        "topics": ["project review", "deployment", "integration"]
+      }
+    },
+    {
+      "id": "test-conv-002",
+      "title": "Health Data Analysis",
+      "date": "2025-06-17T14:30:00Z",
+      "participants": [
+        {
+          "id": "user-123",
+          "name": "Current User"
+        },
+        {
+          "id": "user-321",
+          "name": "Dr. Jamie Taylor"
+        }
+      ],
+      "transcript": [
+        {
+          "speaker": "Current User",
+          "timestamp": "2025-06-17T14:30:15Z",
+          "text": "I've been tracking my health metrics with the Omi necklace for two weeks now."
+        },
+        {
+          "speaker": "Dr. Jamie Taylor",
+          "timestamp": "2025-06-17T14:31:05Z",
+          "text": "The data looks promising. Your stress levels have decreased by 15% since our last meeting."
+        },
+        {
+          "speaker": "Current User",
+          "timestamp": "2025-06-17T14:32:10Z",
+          "text": "That's great to hear. I've been using the meditation techniques you recommended."
+        },
+        {
+          "speaker": "Dr. Jamie Taylor",
+          "timestamp": "2025-06-17T14:33:00Z",
+          "text": "The data supports that. Your HRV readings show improved recovery patterns."
+        }
+      ],
+      "duration_seconds": 422,
+      "location": "Health Clinic",
+      "metadata": {
+        "sentiment": "positive",
+        "topics": ["health tracking", "stress management", "meditation", "recovery"]
+      }
+    }
+  ],
+  "version": "1.0",
+  "export_date": "2025-06-17T23:00:00Z",
+  "total_conversations": 2
+}

@@ -5,6 +5,7 @@
     "incremental": true,
     "tsBuildInfoFile": "./node_modules/typescript/tsbuildinfo",
     "noEmit": true,
+    "target": "ES2020",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "strict": true,
@@ -16,9 +17,11 @@
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
     "types": ["node", "vite/client"],
+    "typeRoots": ["./node_modules/@types", "./src/@types"],
     "paths": {
       "@/*": ["./client/src/*"],
-      "@shared/*": ["./shared/*"]
+      "@shared/*": ["./shared/*"],
+      "@modelcontextprotocol/sdk": ["./node_modules/@modelcontextprotocol/sdk/dist/esm/index.js"]
     }
   }
 }
