@@ -28,8 +28,20 @@ export class OllamaClient {
   private baseUrl: string;
 
   constructor(baseUrl?: string) {
-    // Use OLLAMA_URL from environment if available, fallback to provided baseUrl or default
-    const ollamaUrl = process.env.OLLAMA_URL || baseUrl || "http://localhost:11434";
+    // Determine which URL to use based on USE_NGROK flag
+    const useNgrok = process.env.USE_NGROK === 'true';
+    let ollamaUrl;
+    
+    if (useNgrok && process.env.OLLAMA_NGROK_URL) {
+      // Use ngrok URL if explicitly enabled and available
+      ollamaUrl = process.env.OLLAMA_NGROK_URL;
+      console.log('Using ngrok URL for Ollama connection');
+    } else {
+      // Otherwise use standard URL (zrok or local)
+      ollamaUrl = process.env.OLLAMA_URL || baseUrl || "http://localhost:11434";
+      console.log('Using standard URL for Ollama connection (zrok or local)');
+    }
+    
     this.baseUrl = ollamaUrl.replace(/\/$/, ''); // Remove trailing slash
     
     // Log the Ollama URL being used (helpful for debugging)

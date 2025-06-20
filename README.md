@@ -117,7 +117,77 @@ LIMITLESS_TOKEN=your-token
    ollama pull qwen3:30b
    ```
 
-Optional: For remote access, use ngrok: `ngrok http 11434` and update `OLLAMA_URL` in `.env`
+#### Remote Access Options
+
+**Option 1 (Recommended)**: For remote access with zrok reserved private share:
+```bash
+# Install zrok (macOS)
+brew tap openziti/tap
+brew install zrok
+
+# OR download directly
+# curl -L https://github.com/openziti/zrok/releases/latest/download/zrok_darwin_amd64 -o zrok
+# chmod +x zrok
+# sudo mv zrok /usr/local/bin/
+
+# Set up zrok account (one-time setup)
+# Visit https://myzrok.io to create an account and get your token
+zrok enable <your_token>
+
+# Create a reserved private share with a custom name (one-time setup)
+# This makes your share persistent with the same name/token each time
+zrok reserve private localhost:11434 --backend-mode tcpTunnel --unique-name ollamacognos
+
+# Start the backend for your reserved share on the host machine
+zrok share reserved ollamacognos --headless
+```
+
+Then, on the remote machine where you want to access your Ollama server:
+```bash
+# Install zrok on the remote machine
+# [installation commands as shown above]
+
+# Use the same zrok account (enable with same token)
+zrok enable <your_token>
+
+# Access the reserved share using its name
+# This creates a local port forward, typically at http://127.0.0.1:9191
+zrok access private ollamacognos --headless
+```
+
+After setting up the access on the remote machine, update your remote machine's `.env` file to use the local forwarded port:
+```
+OLLAMA_URL=http://localhost:9191
+USE_NGROK=false
+```
+
+This approach offers several advantages:
+- **Persistent share name**: No need to copy a new share ID each time
+- **TLS passthrough**: Avoids certificate/TLS version issues
+- **Simple reconnection**: Both server and client can reconnect using the same name
+- **Stable configuration**: Your `.env` settings stay consistent
+
+**Option 2 (Alternative)**: For remote access with ngrok:
+```bash
+# Install ngrok (macOS)
+brew install ngrok
+
+# OR download directly
+# Go to https://ngrok.com/download and follow instructions
+
+# Set up ngrok account (one-time setup)
+# Visit https://dashboard.ngrok.com and get your auth token
+ngrok config add-authtoken <your_token>
+
+# Create a tunnel to your Ollama server
+ngrok http 11434
+```
+
+After setting up either option, update your `.env` file with the appropriate URL:
+
+## Known Issues
+
+- **Ngrok 403 Error**: If you encounter a 403 error when using ngrok, try updating your ngrok configuration or switching to zrok's private tcpTunnel mode.
 
 ## Universal Memory Platform
 
@@ -282,7 +352,7 @@ PERPLEXITY_API_KEY=your_perplexity_api_key  # Optional
 4. Start development server: `npm run dev`
 
 ### Ollama Integration
-1. Install Ollama locally or use ngrok for remote access
+1. Install Ollama locally or use zrok/ngrok for remote access (see Remote Access Options above)
 2. Configure Ollama URL in settings
 3. Download models: `ollama pull deepseek-r1:32b`
 4. Models automatically route based on naming convention
@@ -550,6 +620,15 @@ MCP (Model Context Protocol) provides a standardized interface for AI models to 
 - Examine server logs for detailed error messages
 - Verify all required environment variables for the specific MCP service
 - Check that the MCP server implements the `McpServerWithRouter` interface
+
+## Known Issues
+
+### Remote Access
+- **ngrok 403 Forbidden Error**: When accessing Ollama via ngrok, you may encounter HTTP 403 errors. This appears to be related to ngrok's handling of Ollama's API requests. As a workaround, use the zrok private tcpTunnel approach detailed in the Remote Access Options section.
+
+- **zrok Public Share TLS Errors**: When using zrok's public share mode (not tcpTunnel), various TLS protocol errors may occur (e.g., `tlsv1 alert protocol version` or `packet length too long`). These issues are related to TLS version incompatibilities between clients and zrok's TLS termination. The tcpTunnel mode bypasses these issues by using raw TCP tunneling.
+
+- **Connection Limit Errors**: Free tier zrok accounts may have connection limits that result in `ignoring connection, already have max connections` errors. Consider upgrading to a paid tier if you need more concurrent connections.
 
 ## Support
 
