@@ -9,6 +9,9 @@ interface OllamaRequest {
   stream?: boolean;
   temperature?: number;
   max_tokens?: number;
+  tools?: any[];
+  disableMcpTools?: boolean;
+  enabledMcpTools?: string[];
 }
 
 interface OllamaResponse {
@@ -71,6 +74,91 @@ export class OllamaClient {
         throw new Error(`Failed to connect to Ollama: ${error.message}`);
       }
       throw new Error('Failed to connect to Ollama: Unknown error');
+    }
+  }
+  
+  /**
+   * Stream chat responses from Ollama
+   * @param request The chat request
+   * @yields Streaming response chunks
+   */
+  async *streamingChat(request: OllamaRequest): AsyncGenerator<OllamaResponse> {
+    try {
+      // Ensure stream is set to true
+      request.stream = true;
+      
+      const response = await fetch(`${this.baseUrl}/api/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(request),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Ollama API error: ${response.status} ${response.statusText}`);
+      }
+
+      if (!response.body) {
+        throw new Error('Response body is null');
+      }
+
+      // Use the streaming API to get the response
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      
+      // Read the stream chunk by chunk
+      while (true) {
+        const { done, value } = await reader.read();
+        
+        if (done) {
+          break;
+        }
+        
+        // Decode the chunk and add it to our buffer
+        buffer += decoder.decode(value, { stream: true });
+        
+        // Process complete JSON objects
+        let boundary = buffer.indexOf('\n');
+        while (boundary !== -1) {
+          const chunk = buffer.substring(0, boundary);
+          buffer = buffer.substring(boundary + 1);
+          
+          if (chunk.trim()) {
+            try {
+              const parsed = JSON.parse(chunk);
+              yield parsed;
+            } catch (e) {
+              console.error('Error parsing JSON chunk:', e);
+            }
+          }
+          
+          boundary = buffer.indexOf('\n');
+        }
+      }
+      
+      // Handle any remaining data in the buffer
+      if (buffer.trim()) {
+        try {
+          const parsed = JSON.parse(buffer);
+          yield parsed;
+        } catch (e) {
+          console.error('Error parsing JSON from remaining buffer:', e);
+        }
+      }
+      
+      // Signal completion with a final done message
+      yield { 
+        message: { role: 'assistant', content: '' },
+        done: true
+      };
+      
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new Error(`Failed to stream from Ollama: ${error.message}`);
+      }
+      throw new Error('Failed to stream from Ollama: Unknown error');
     }
   }
 

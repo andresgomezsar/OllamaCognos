@@ -623,8 +623,71 @@ MCP (Model Context Protocol) provides a standardized interface for AI models to 
 
 ## Known Issues
 
-### Remote Access
-- **ngrok 403 Forbidden Error**: When accessing Ollama via ngrok, you may encounter HTTP 403 errors. This appears to be related to ngrok's handling of Ollama's API requests. As a workaround, use the zrok private tcpTunnel approach detailed in the Remote Access Options section.
+### MCP Tool-Calling with Ollama
+
+This project implements Model Context Protocol (MCP) tool-calling with Ollama, allowing language models to interact with external tools and APIs. Here's how to use this feature:
+
+### Basic Usage
+
+```typescript
+import { ollamaClient } from './server/ollama';
+import { enhanceOllamaWithMcp } from './server/ollama/ollamaMcpIntegration';
+
+// Enhance the Ollama client with MCP capabilities
+const mcpEnabledOllamaClient = enhanceOllamaWithMcp(ollamaClient);
+
+// Use the enhanced client for chat
+const response = await mcpEnabledOllamaClient.chat({
+  model: 'llama3.2-vision:latest', // Or any function-calling compatible model
+  messages: [
+    { role: 'user', content: 'What is the current weather in San Francisco?' }
+  ]
+});
+```
+
+### Controlling Tool Access
+
+You can specify which MCP tools should be enabled for a specific request:
+
+```typescript
+const response = await mcpEnabledOllamaClient.chat({
+  model: 'llama3.2-vision:latest',
+  messages: [{ role: 'user', content: 'Show me my latest Oura ring data' }],
+  enabledMcpTools: ['get_sleep_data', 'get_activity_data'] // Only enable specific tools
+});
+```
+
+### Streaming Support
+
+MCP tool calling also works with streaming responses:
+
+```typescript
+const chatStream = mcpEnabledOllamaClient.streamingChat({
+  model: 'llama3.2-vision:latest',
+  messages: [{ role: 'user', content: 'What were my sleep patterns last week?' }]
+});
+
+for await (const chunk of chatStream) {
+  // Process streaming chunks
+  console.log(chunk.message?.content || '');
+  
+  // Tool calls will be processed after streaming completes
+}
+```
+
+### Debugging
+
+To enable detailed MCP tool-calling logs, set the environment variable:
+
+```
+DEBUG_MCP_TOOLS=true
+```
+
+This will log available tools, tool calls, and execution results to help with troubleshooting.
+
+## Known Issues
+
+- **ngrok 403 Forbidden Error**: When accessing the Ollama server through ngrok, you might encounter HTTP 403 Forbidden errors. This can happen due to ngrok's authorization policies or rate limiting. Try reconnecting ngrok or upgrading to a paid plan if you encounter this issue consistently.
 
 - **zrok Public Share TLS Errors**: When using zrok's public share mode (not tcpTunnel), various TLS protocol errors may occur (e.g., `tlsv1 alert protocol version` or `packet length too long`). These issues are related to TLS version incompatibilities between clients and zrok's TLS termination. The tcpTunnel mode bypasses these issues by using raw TCP tunneling.
 
