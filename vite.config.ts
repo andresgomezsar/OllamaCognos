@@ -26,6 +26,11 @@ const config = {
       strict: true,
       deny: ["**/.*"],
     },
+    hmr: {
+      protocol: 'ws',
+      host: 'localhost',
+      port: 3001,
+    },
   },
 };
 

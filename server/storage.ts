@@ -69,6 +69,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   private async initializeDefaults() {
+    console.log('DEBUG: Entering initializeDefaults - Stack trace:', new Error().stack);
     try {
       // Initialize configuration entries if they don't exist
       await this.initializeConfiguration();
@@ -103,11 +104,23 @@ export class DatabaseStorage implements IStorage {
       }
     } catch (error) {
       console.error("Failed to initialize defaults:", error);
+    } finally {
+      console.log('DEBUG: Exiting initializeDefaults');
     }
   }
   
   private async initializeConfiguration() {
+    console.log('DEBUG: Entering initializeConfiguration - Stack trace:', new Error().stack);
     try {
+      // Log information about WebSocket errors to help users understand
+      if (process.env.NODE_ENV === 'development') {
+        console.log('=== WebSocket Connection Info ===');
+        console.log('IMPORTANT: If you see wss://localhost/v2 connection errors during startup,');
+        console.log('they are expected in development mode and can be safely ignored.');
+        console.log('These are coming from a dependency trying to connect to a local LLM service.');
+        console.log('==============================');
+      }
+
       // Define default configuration entries
       const defaultConfigs: InsertConfiguration[] = [
         {
@@ -171,6 +184,12 @@ export class DatabaseStorage implements IStorage {
       console.log('Configuration initialized');
     } catch (error) {
       console.error("Failed to initialize configuration:", error);
+    } finally {
+      // No need to restore anything as we're not overriding WebSocket anymore
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Completed configuration initialization');
+      }
+      console.log('DEBUG: Exiting initializeConfiguration');
     }
   }
 

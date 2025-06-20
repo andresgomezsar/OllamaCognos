@@ -395,7 +395,44 @@ export function registerRoutes(app: express.Application) {
   });
 
   // WebSocket server for real-time chat
-  const wss = new WebSocketServer({ server: server, path: '/ws' });
+  console.log('Setting up WebSocket server at path /ws');
+  
+  // Add pre-upgrade handler for debugging
+  server.on('upgrade', (request, socket, head) => {
+    const pathname = new URL(request.url || '', `http://${request.headers.host}`).pathname;
+    console.log(`[Debug] WebSocket upgrade request: ${request.url}`);
+    console.log(`[Debug] WebSocket pathname: ${pathname}`);
+    console.log(`[Debug] WebSocket query params: ${new URL(request.url || '', `http://${request.headers.host}`).search}`);
+    
+    // Let normal handling continue
+  });
+  
+  // Create WebSocket server with more detailed error handling
+  const wss = new WebSocketServer({ 
+    server: server, 
+    path: '/ws',
+    verifyClient: (info, cb) => {
+      const token = new URL(info.req.url || '', `http://${info.req.headers.host}`).searchParams.get('token');
+      console.log(`[Debug] WebSocket verifyClient called, token: ${token ? 'present' : 'missing'}`);
+      
+      // DEVELOPMENT MODE: Accept any connection in dev mode
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Debug] Development mode - accepting WebSocket connection regardless of token');
+        cb(true);
+        return;
+      }
+      
+      // In production, validate token here
+      if (!token) {
+        console.log('[Debug] WebSocket connection rejected: no token');
+        cb(false, 401, 'Unauthorized: Missing authentication token');
+        return;
+      }
+      
+      // Accept the connection
+      cb(true);
+    }
+  });
 
   // Store active WebSocket connections with their user ID
   const connections = new Map<string, { ws: WebSocket, userId: number }>();
@@ -403,12 +440,19 @@ export function registerRoutes(app: express.Application) {
   // Parse token from query params for WebSocket
   function parseToken(req: http.IncomingMessage): string | null {
     const url = new URL(req.url || '', `http://${req.headers.host}`);
-    return url.searchParams.get('token');
+    const token = url.searchParams.get('token');
+    console.log(`[Debug] parseToken called, token: ${token ? 'present' : 'missing'}`);
+    return token;
   }
   
   // Verify token and get user ID (simplified for development)
   async function getUserIdFromToken(token: string | null): Promise<number | null> {
-    if (!token) return null;
+    console.log(`[Debug] getUserIdFromToken called, token: ${token ? 'present' : 'missing'}`);
+    
+    if (!token) {
+      console.log('[Debug] No token provided, returning null');
+      return null;
+    }
     
     try {
       // In a real production app, verify JWT or session token here
@@ -416,9 +460,10 @@ export function registerRoutes(app: express.Application) {
       
       // TODO: Replace with actual token verification
       // This is just a placeholder that assumes token is valid
+      console.log('[Debug] Development mode - returning default user ID 1');
       return 1; // Default to user ID 1 for development
     } catch (error) {
-      console.error('Error verifying token:', error);
+      console.error('[Debug] Error verifying token:', error);
       return null;
     }
   }

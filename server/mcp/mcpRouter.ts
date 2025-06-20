@@ -16,20 +16,30 @@ let MockOmiMemoryClient: any = null;
 // Only attempt to load the mock client in development mode to avoid production issues
 if (process.env.NODE_ENV === 'development' || process.env.USE_MOCK_CLIENTS === 'true') {
   try {
-    // Use a more reliable import approach
-    const fs = require('fs');
-    const mockClientPath = path.join(process.cwd(), 'cognos_pipeline', 'mockOmiMemoryClient.js');
-    
-    // Check if the file exists before attempting to require it
-    if (fs.existsSync(mockClientPath)) {
-      const mockModule = require(mockClientPath);
-      MockOmiMemoryClient = mockModule.MockOmiMemoryClient;
-      console.log('✅ MockOmiMemoryClient loaded for testing');
-    } else {
-      console.log('⚠️ MockOmiMemoryClient file not found at:', mockClientPath);
-    }
+    // Use ESM-compatible import approach
+    import('node:fs/promises').then(async (fs) => {
+      const mockClientPath = path.join(process.cwd(), 'cognos_pipeline', 'mockOmiMemoryClient.js');
+      
+      // Check if the file exists before attempting to import it
+      try {
+        if (await fs.access(mockClientPath).then(() => true).catch(() => false)) {
+          import(mockClientPath).then((mockModule) => {
+            MockOmiMemoryClient = mockModule.MockOmiMemoryClient;
+            console.log('✅ MockOmiMemoryClient loaded for testing');
+          }).catch(err => {
+            console.log('⚠️ Error importing MockOmiMemoryClient:', err instanceof Error ? err.message : String(err));
+          });
+        } else {
+          console.log('⚠️ MockOmiMemoryClient file not found at:', mockClientPath);
+        }
+      } catch (fsError) {
+        console.log('⚠️ Error checking MockOmiMemoryClient file:', fsError instanceof Error ? fsError.message : String(fsError));
+      }
+    }).catch(error => {
+      console.log('⚠️ Failed to load fs module:', error instanceof Error ? error.message : String(error));
+    });
   } catch (error) {
-    console.log('⚠️ Failed to load MockOmiMemoryClient:', error instanceof Error ? error.message : String(error));
+    console.log('⚠️ Failed to setup MockOmiMemoryClient import:', error instanceof Error ? error.message : String(error));
   }
 } else {
   console.log('Production mode - not loading mock clients');

@@ -79,7 +79,10 @@ export class NgrokService {
       healthData: `${this.tunnel}/api/health`,
       mcpTools: `${this.tunnel}/api/mcp/tools`,
       status: `${this.tunnel}/api/status`,
-      websocket: `${this.tunnel.replace('https://', 'wss://').replace('http://', 'ws:')}/ws`
+      websocket: `${this.tunnel.replace('https://', 'wss://').replace('http://', 'ws:')}/ws`,
+      // OMI webhook endpoints
+      omiWebhook: `${this.tunnel}/api/omi/webhook`,
+      omiImport: `${this.tunnel}/api/omi/import`
     };
   }
 
@@ -248,11 +251,20 @@ export async function initializeNgrok(): Promise<void> {
       const endpoints = ngrokService.getApiEndpoints();
       if (endpoints) {
         console.log('\n🌐 External API Endpoints:');
+        console.log('\n📡 OMI Integration Endpoints:');
+        console.log(`   OMI Webhook: ${endpoints.omiWebhook}`);
+        console.log(`   OMI Import: ${endpoints.omiImport}`);
+        
+        console.log('\n🤖 AI Assistant Endpoints:');
         console.log(`   Chat Completions: ${endpoints.chatCompletions}`);
+        console.log(`   WebSocket: ${endpoints.websocket}`);
+        
+        console.log('\n📊 Other Endpoints:');
         console.log(`   Health Data: ${endpoints.healthData}`);
         console.log(`   MCP Tools: ${endpoints.mcpTools}`);
-        console.log(`   WebSocket: ${endpoints.websocket}`);
-        console.log('\n   Use these URLs to connect external applications to your AI assistant\n');
+        console.log(`   Status: ${endpoints.status}`);
+        
+        console.log('\n   Use these URLs to connect OMI and other applications to your server\n');
       }
       
       // Cache the successful ngrok URL in the .env file
