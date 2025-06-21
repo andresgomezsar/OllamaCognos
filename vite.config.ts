@@ -29,7 +29,7 @@ const config = {
     hmr: {
       protocol: 'ws',
       host: 'localhost',
-      port: 3001,
+      port: 3000,
     },
   },
 };

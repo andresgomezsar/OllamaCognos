@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 // Import wouter from our compatibility layer
-const { useParams } = require("../wouter-compat");
+import { useParams } from "../wouter-compat.js";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.js";
 import { Button } from "@/components/ui/button.js";

@@ -2,7 +2,7 @@
 
 // Test both local endpoint and various possible zrok URLs
 const urlsToTest = [
-  'http://localhost:3001',
+  'http://localhost:3000',
   'https://gdvaz2raidu9.share.zrok.io',   // Previous zrok URL
   'https://share.zrok.io',               // Base domain
 ];

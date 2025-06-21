@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../lib/auth-context.js';
 // Import wouter from our compatibility layer
-const { useLocation } = require("../wouter-compat");
+import { useLocation } from "../wouter-compat.js";
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');

@@ -102,9 +102,9 @@ process.on('uncaughtException', (error) => {
     serveStatic(app);
   }
 
-  // Use port 3001 for local development (3000 is often in use)
+  // Use port 3000 for local development
   // this serves both the API and the client.
-  const port = process.env.PORT ? parseInt(process.env.PORT) : 3001;
+  const port = process.env.PORT ? parseInt(process.env.PORT) : 3000;
   server.listen({
     port,
     host: "0.0.0.0", // Listen on all interfaces to allow tunnel access

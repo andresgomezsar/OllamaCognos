@@ -21,7 +21,12 @@ export function useWebSocket() {
       const authToken = localStorage.getItem('authToken');
       
       // Build WebSocket URL with auth token as query param if available
-      let wsUrl = `${protocol}//${window.location.host}/ws`;
+      // Use a fixed backend port (3000) for WebSocket connections in development
+      // This ensures WebSockets connect to the correct port even when Vite HMR uses a different port
+      const port = '3000'; // Explicitly define port for all environments
+      const host = `${window.location.hostname}:${port}`;
+        
+      let wsUrl = `${protocol}//${host}/ws`;
       if (authToken) {
         wsUrl = `${wsUrl}?token=${encodeURIComponent(authToken)}`;
       } else {

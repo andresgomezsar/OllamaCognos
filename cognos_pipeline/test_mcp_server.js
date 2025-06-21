@@ -6,7 +6,7 @@ const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
-const PORT = 3001; // The port our server runs on
+const PORT = 3000; // The port our server runs on
 
 // Colors for console output
 const colors = {

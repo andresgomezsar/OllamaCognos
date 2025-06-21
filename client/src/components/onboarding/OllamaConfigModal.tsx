@@ -159,7 +159,7 @@ export function OllamaConfigModal({ open, onClose, onSave, defaultUrl = "http://
                     href="https://ngrok.com" 
                     target="_blank" 
                     rel="noreferrer"
-                    className="text-blue-600 hover:underline flex items-center gap-1 inline-flex"
+                    className="text-blue-600 hover:underline items-center gap-1 inline-flex"
                   >
                     ngrok <ExternalLink className="h-3 w-3" />
                   </a> for secure tunneling.

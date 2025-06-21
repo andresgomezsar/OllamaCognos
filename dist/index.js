@@ -48,7 +48,7 @@ var init_vite_config = __esm({
         hmr: {
           protocol: "ws",
           host: "localhost",
-          port: 3001
+          port: 3000
         }
       }
     };
@@ -7084,7 +7084,7 @@ process.on("uncaughtException", (error) => {
     console.log("Setting up static file serving...");
     serveStatic(app);
   }
-  const port = process.env.PORT ? parseInt(process.env.PORT) : 3001;
+  const port = process.env.PORT ? parseInt(process.env.PORT) : 3000;
   server.listen({
     port,
     host: "0.0.0.0"

@@ -5,7 +5,7 @@ const FormData = require('form-data');
 const path = require('path');
 
 // Set up test parameters
-const SERVER_URL = 'http://localhost:3001';
+const SERVER_URL = 'http://localhost:3000';
 const ENDPOINT = '/api/omi/import/conversations';
 const TEST_FILE = path.join(__dirname, 'test-conversations.json');
 
