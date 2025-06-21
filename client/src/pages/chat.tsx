@@ -2,16 +2,16 @@ import { useState, useEffect, useRef } from "react";
 // Import wouter from our compatibility layer
 const { useParams } = require("../wouter-compat");
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { ChatMessage } from "@/components/ChatMessage";
-import { useWebSocket } from "@/hooks/useWebSocket";
-import { apiRequest } from "@/lib/queryClient";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.js";
+import { Button } from "@/components/ui/button.js";
+import { Textarea } from "@/components/ui/textarea.js";
+import { Badge } from "@/components/ui/badge.js";
+import { ChatMessage } from "@/components/ChatMessage.js";
+import { useWebSocket } from "@/hooks/useWebSocket.js";
+import { apiRequest } from "@/lib/queryClient.js";
 import { Brain, Send, Plus, Settings, Heart, Zap } from "lucide-react";
-import { ConnectionErrorMessage } from "@/components/errors/ConnectionErrorMessage";
-import { useOnboarding } from "@/components/onboarding/OnboardingProvider";
+import { ConnectionErrorMessage } from "@/components/errors/ConnectionErrorMessage.js";
+import { useOnboarding } from "@/components/onboarding/OnboardingProvider.js";
 
 export default function Chat() {
   const { conversationId } = useParams();

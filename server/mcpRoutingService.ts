@@ -1,7 +1,7 @@
-import { storage } from "./storage";
-import { executeMCPTool } from "./mcp";
-import { createOllamaClient } from "./ollama";
-import { OllamaRequest } from "./mcp/types";
+import { storage } from "./storage.js";
+import { executeMCPTool } from "./mcp.js";
+import { createOllamaClient } from "./ollama.js";
+import { OllamaRequest } from "./mcp/types.js";
 
 interface RoutingInput {
   userMessage: string;

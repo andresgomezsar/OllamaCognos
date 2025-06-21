@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import OllamaConfigModal from './OllamaConfigModal';
+import OllamaConfigModal from './OllamaConfigModal.js';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useToast } from '@/hooks/use-toast';
-import { settingsApi, statusApi } from '@/lib/api';
+import { useToast } from '@/hooks/use-toast.js';
+import { settingsApi, statusApi } from '@/lib/api.js';
 
 // Define the context type
 interface OnboardingContextType {

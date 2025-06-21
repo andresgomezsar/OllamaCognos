@@ -1,7 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express';
 import passport from 'passport';
 import { z } from 'zod';
-import { loginSchema, registrationSchema, changePasswordSchema, isAuthenticated, registerUser, changePassword } from './auth';
+import { loginSchema, registrationSchema, changePasswordSchema, isAuthenticated, registerUser, changePassword } from './auth.js';
 
 const router = express.Router();
 

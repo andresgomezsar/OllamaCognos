@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 import { type Server } from "http";
 import * as vite from "vite";
-import { customAlphabet } from '../shared/utils/nanoid-compat';
+import { customAlphabet } from '../shared/utils/nanoid-compat.js';
 
 // ESM compatibility: use process.cwd() as base path instead of __dirname
 const serverDir = path.join(process.cwd(), 'server');
@@ -13,11 +13,15 @@ const projectRoot = process.cwd();
 let viteConfig = {};
 const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 10);
 
-// Create custom logger similar to Vite's
-const viteLogger = {
-  info: (msg: string) => console.log(`\x1b[32m[vite]\x1b[0m ${msg}`),
-  warn: (msg: string) => console.log(`\x1b[33m[vite]\x1b[0m ${msg}`),
-  error: (msg: string) => console.log(`\x1b[31m[vite]\x1b[0m ${msg}`),
+// Create simple logging functions for our own use
+const viteLogPrefix = (color: string, type: string) => (msg: string) => {
+  console.log(`\x1b[${color}m[vite:${type}]\x1b[0m ${msg}`);
+};
+
+const viteLog = {
+  info: viteLogPrefix('32', 'info'),
+  warn: viteLogPrefix('33', 'warn'),
+  error: viteLogPrefix('31', 'error')
 };
 
 export function log(message: string, source = "express") {
@@ -32,10 +36,12 @@ export function log(message: string, source = "express") {
 }
 
 export async function setupVite(app: Express, server: Server) {
+  // Define server options with correct types
   const serverOptions = {
     middlewareMode: true,
     hmr: { server },
-    allowedHosts: true,
+    // Set to true which matches the expected type: true | string[] | undefined
+    allowedHosts: true as true,
   };
 
   // Load vite config dynamically
@@ -50,7 +56,7 @@ export async function setupVite(app: Express, server: Server) {
   const devServer = await vite.createServer({
     ...viteConfig,
     configFile: false,
-    customLogger: viteLogger,
+    // Removed customLogger to use default Vite logger
     server: serverOptions,
     appType: "custom",
   });

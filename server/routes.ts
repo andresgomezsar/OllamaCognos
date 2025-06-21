@@ -1,19 +1,16 @@
-import type { Express } from "express";
-import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import express, { Request, Response } from 'express';
 import http from 'http';
-import path from 'path';
 import axios from 'axios';
 
-import { OllamaClient } from './ollama';
-import { OuraClient } from './oura';
-import { PerplexityClient } from './perplexity';
-import { OpenRouterClient } from './openrouter';
-import { GroqClient } from './groq';
+import { OllamaClient } from './ollama.js';
+import { OuraClient } from './oura.js';
+import { PerplexityClient } from './perplexity.js';
+import { OpenRouterClient } from './openrouter.js';
+import { GroqClient } from './groq.js';
 
 // Import MCP system directly from mcpRouter.ts to avoid any reexport issues
-import { mcpRouter, mcpRoutingService, initMcpServers } from './mcp/mcpRouter';
+import { mcpRouter, mcpRoutingService, initMcpServers } from './mcp/mcpRouter.js';
 
 // Define the initialization function locally to avoid import issues
 function initializeMcpSystem() {
@@ -26,23 +23,21 @@ import {
   chatCompletionSchema, 
   healthQuerySchema,
   insertConversationSchema,
-  insertMessageSchema,
-  insertSettingsSchema,
   configurationSchema,
   configurationUpdateSchema,
   configurationBulkUpdateSchema
-} from "@shared/schema";
+} from "../shared/schema.js";
 
 // Storage, auth, and utilities
-import { storage } from "./storage";
-import { isAuthenticated } from "./auth";
-import { ngrokService } from "./ngrok";
-// Use direct import with absolute path for better TypeScript resolution
-import { executeMCPTool } from "/Users/andresgomezsarmiento/Documents/GitHub/OllamaCognos/server/mcp/mcpUtils";
-import { createOllamaClient, createOpenRouterClient, listMCPTools } from "./clients/clientUtils";
-import { LimitlessClient } from "./limitless";
-import { omiWebhookRouter } from "./routes/omi-webhooks";
-import { omiImportRouter } from "./routes/omi-import";
+import { storage } from "./storage.js";
+import { isAuthenticated } from "./auth.js";
+import { ngrokService } from "./ngrok.js";
+// Use direct import with relative path
+import { executeMCPTool } from "./mcp/mcpUtils.js";
+import { createOllamaClient, createOpenRouterClient, listMCPTools } from "./clients/clientUtils.js";
+import { LimitlessClient } from "./limitless.js";
+import { omiWebhookRouter } from "./routes/omi-webhooks.js";
+import { omiImportRouter } from "./routes/omi-import.js";
 
 export function registerRoutes(app: express.Application) {
   const server = http.createServer(app);

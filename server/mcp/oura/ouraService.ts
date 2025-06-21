@@ -10,7 +10,7 @@ import {
   HeartRate, 
   EnhancedTag,
   TagApiResponse 
-} from "./interfaces";
+} from "./interfaces.js";
 
 // Helper function to check if a string is a GUID/UUID
 function isGuid(str: string): boolean {

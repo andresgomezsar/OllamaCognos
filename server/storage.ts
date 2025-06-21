@@ -10,8 +10,8 @@ import {
   type UserConsent, type InsertUserConsent,
   type AuditLog, type InsertAuditLog,
   type Configuration, type InsertConfiguration
-} from "@shared/schema";
-import { db } from "./db";
+} from "@shared/schema.js";
+import { db } from "./db.js";
 import { eq, desc, and, gte, lte, inArray, sql } from "drizzle-orm";
 
 export interface IStorage {

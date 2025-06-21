@@ -1,7 +1,7 @@
 import { ReactNode, useEffect } from 'react';
 // Import wouter from our compatibility layer using ESM syntax
-import { useLocation } from "../wouter-compat";
-import { useAuth } from '../lib/auth-context';
+import { useLocation } from "../wouter-compat.js";
+import { useAuth } from '../lib/auth-context.js';
 
 interface ProtectedRouteProps {
   children: ReactNode;

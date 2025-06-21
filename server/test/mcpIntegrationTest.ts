@@ -7,9 +7,9 @@
 const { describe, it, before, after } = require('mocha');
 const { expect } = require('chai');
 const sinon = require('sinon');
-const { OllamaClient } = require('../ollama');
-const { executeMCPTool } = require('../mcp/mcpUtils');
-const { mcpRoutingService } = require('../mcp/mcpRouter');
+const { OllamaClient } = require('../ollama.js');
+const { executeMCPTool } = require('../mcp/mcpUtils.js');
+const { mcpRoutingService } = require('../mcp/mcpRouter.js');
 
 describe('MCP End-to-End Integration Tests', () => {
   // Create stubs for external dependencies

@@ -1,7 +1,7 @@
 import React from 'react';
 import { AlertCircle, HelpCircle, RefreshCw, ExternalLink } from 'lucide-react';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert.js';
+import { Button } from '@/components/ui/button.js';
 
 interface ConnectionErrorMessageProps {
   serviceName: string;

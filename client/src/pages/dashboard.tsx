@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { HealthMetrics } from "@/components/HealthMetrics";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.js";
+import { Badge } from "@/components/ui/badge.js";
+import { Button } from "@/components/ui/button.js";
+import { HealthMetrics } from "@/components/HealthMetrics.js";
 import { Brain, MessageSquare, Heart, Zap, TrendingUp, Activity, Loader2 } from "lucide-react";
 
 // Define interfaces for our API responses

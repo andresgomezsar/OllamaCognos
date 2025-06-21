@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { useToast } from '@/hooks/use-toast';
-import { settingsApi, statusApi, configApi } from '@/lib/api';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.js';
+import { Button } from '@/components/ui/button.js';
+import { Input } from '@/components/ui/input.js';
+import { Label } from '@/components/ui/label.js';
+import { Switch } from '@/components/ui/switch.js';
+import { Badge } from '@/components/ui/badge.js';
+import { Separator } from '@/components/ui/separator.js';
+import { useToast } from '@/hooks/use-toast.js';
+import { settingsApi, statusApi, configApi } from '@/lib/api.js';
 import { Settings, Zap, Shield, Database, Bot, Activity, Watch, PanelRightOpen } from 'lucide-react';
 
 // Define interface for configuration items

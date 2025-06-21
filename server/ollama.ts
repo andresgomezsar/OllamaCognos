@@ -1,9 +1,9 @@
-interface OllamaMessage {
+export interface OllamaMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
 }
 
-interface OllamaRequest {
+export interface OllamaRequest {
   model: string;
   messages: OllamaMessage[];
   stream?: boolean;
@@ -14,7 +14,7 @@ interface OllamaRequest {
   enabledMcpTools?: string[];
 }
 
-interface OllamaResponse {
+export interface OllamaResponse {
   message: {
     role: string;
     content: string;

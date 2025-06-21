@@ -1,12 +1,12 @@
 // Import wouter from our compatibility layer
-const { useLocation } = require("../wouter-compat");
+import { useLocation } from "../wouter-compat.js";
 import { useQuery } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button.js";
+import { Badge } from "@/components/ui/badge.js";
 import { Brain, Menu, Bell, Settings, AlertCircle } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useOnboarding } from "@/components/onboarding/OnboardingProvider";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip.js";
+import { useOnboarding } from "@/components/onboarding/OnboardingProvider.js";
+import { Alert, AlertDescription } from "@/components/ui/alert.js";
 import { useState } from "react";
 
 interface MobileNavProps {

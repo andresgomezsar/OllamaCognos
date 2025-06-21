@@ -3,8 +3,8 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import path from 'path';
 import fs from 'fs';
-import { cognosTools, getMemoriesSchema, createMemorySchema, createMemoryFromAudioSchema, deleteMemorySchema, editMemorySchema, getConversationsSchema } from "./cognosTools";
-import OmiMemoryClient, { MemoryFilterOptions } from "./omiMemoryClient";
+import { cognosTools, getMemoriesSchema, createMemorySchema, createMemoryFromAudioSchema, deleteMemorySchema, editMemorySchema, getConversationsSchema } from "./cognosTools.js";
+import OmiMemoryClient, { MemoryFilterOptions } from "./omiMemoryClient.js";
 import {
   ContentItem,
   ListToolsRequest,
@@ -12,7 +12,7 @@ import {
   CallToolRequest,
   CallToolResponse,
   RequestHandler
-} from "../types";
+} from "../types.js";
 
 // Convert exec to promise-based version
 const execAsync = promisify(exec);

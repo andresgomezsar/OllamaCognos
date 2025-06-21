@@ -2,13 +2,13 @@ import { EventEmitter } from "events";
 import { 
   OuraService,
   createOuraService 
-} from "./ouraService";
+} from "./ouraService.js";
 import { 
   ouraTools 
-} from "./ouraTools";
+} from "./ouraTools.js";
 import { 
   ouraPrompts 
-} from "./ouraPrompts";
+} from "./ouraPrompts.js";
 import { 
   ContentItem,
   ListToolsRequest, 
@@ -20,7 +20,7 @@ import {
   GetPromptRequest, 
   GetPromptResponse,
   RequestHandler
-} from "../types";
+} from "../types.js";
 
 // Create an event emitter for real-time data streaming
 export const ouraEventEmitter = new EventEmitter();

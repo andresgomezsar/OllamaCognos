@@ -2,22 +2,22 @@
  * MCP Utilities - Helper functions for MCP integration
  */
 import { v4 as uuidv4 } from 'uuid';
-import { mcpServers } from './mcpRouter';
+import { mcpServers } from './mcpRouter.js';
 import {
   MCPToolRequest,
   MCPToolResponse,
   validateMCPToolRequest,
   validateMCPToolResponse,
   validateServerSpecificRequest,
-} from './mcpSchemaValidator';
+} from './mcpSchemaValidator.js';
 import {
   MCPStreamingService,
   StreamEventType,
   MCPToolStream
-} from './mcpStreaming';
+} from './mcpStreaming.js';
 
 // Import structured logging utilities
-import { logMcpTools, logToolExecution, logError, timeOperation, LogLevel } from './mcpLogging';
+import { logMcpTools, logToolExecution, logError, timeOperation, LogLevel } from './mcpLogging.js';
 import debug from 'debug';
 
 /**

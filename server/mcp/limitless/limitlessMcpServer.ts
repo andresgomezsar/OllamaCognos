@@ -5,7 +5,7 @@
  * for the Limitless AI Pendant API.
  */
 
-import { LimitlessClient } from "../../limitless";
+import { LimitlessClient } from "../../limitless.js";
 
 // Define interfaces for MCP tools and parameters
 interface McpTool {

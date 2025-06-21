@@ -6,11 +6,11 @@
  * information in chat responses.
  */
 import { v4 as uuidv4 } from 'uuid';
-import { mcpServers } from '../mcp/mcpRouter';
-import { ouraTools } from '../mcp/oura/ouraTools';
-import { executeMCPTool } from '../mcp/mcpUtils';
-import { OllamaClient } from '../ollama';
-import { Tool } from '../mcp/types';
+import { mcpServers } from '../mcp/mcpRouter.js';
+import { ouraTools } from '../mcp/oura/ouraTools.js';
+import { executeMCPTool } from '../mcp/mcpUtils.js';
+import { OllamaClient } from '../ollama.js';
+import { Tool } from '../mcp/types.js';
 
 /**
  * Type definitions for Ollama function calling
@@ -41,16 +41,19 @@ interface OllamaStreamingResponse {
   };
 }
 export interface OllamaFunctionDefinition {
-  name: string;
-  description: string;
-  parameters: {
-    type: string;
-    properties: Record<string, {
+  type: string; // 'function' for OpenAI format
+  function: {
+    name: string;
+    description: string;
+    parameters: {
       type: string;
-      description: string;
-      enum?: string[];
-    }>;
-    required?: string[];
+      properties: Record<string, {
+        type: string;
+        description: string;
+        enum?: string[];
+      }>;
+      required?: string[];
+    };
   };
 }
 
@@ -80,15 +83,21 @@ export function createMcpFunctionDefinitions(): OllamaFunctionDefinition[] {
 
       // Process each tool from this server
       for (const tool of serverTools) {
-        // Transform the MCP tool schema to Ollama function definition
-        const definition: OllamaFunctionDefinition = {
+        // Transform the MCP tool schema to Ollama function definition using OpenAI format
+        const functionDef = {
           name: `mcp_${serverName}_${tool.name}`, // Use consistent naming: mcp_server_tool
           description: `${tool.description} (via ${serverName} MCP server)`,
           parameters: {
             type: 'object',
-            properties: {},
-            required: []
+            properties: {} as Record<string, { type: string; description: string; enum?: string[]; items?: any }>,
+            required: [] as string[]
           }
+        };
+        
+        // OpenAI format wraps the function definition
+        const definition: OllamaFunctionDefinition = {
+          type: 'function',
+          function: functionDef
         };
         
         // Convert input schema to Ollama parameters
@@ -97,74 +106,83 @@ export function createMcpFunctionDefinitions(): OllamaFunctionDefinition[] {
             // Cast unknown property to expected shape and use default values if missing
             const typedProp = prop as { type?: string; description?: string; enum?: string[]; items?: any };
             
-            definition.parameters.properties[key] = {
+            functionDef.parameters.properties[key] = {
               type: typedProp.type || 'string',
               description: typedProp.description || ''
             };
             
             // Add enum if available
             if (typedProp.enum) {
-              definition.parameters.properties[key].enum = typedProp.enum;
+              functionDef.parameters.properties[key].enum = typedProp.enum;
             }
             
             // Handle array types with items
             if (typedProp.type === 'array' && typedProp.items) {
               // Add items property if it's an array
-              (definition.parameters.properties[key] as any).items = typedProp.items;
+              (functionDef.parameters.properties[key] as any).items = typedProp.items;
             }
           }
           
           // Add required parameters
           if (tool.inputSchema.required) {
-            definition.parameters.required = tool.inputSchema.required;
+            functionDef.parameters.required = tool.inputSchema.required;
           }
         }
         
+        // Add the compiled function definition to our list
         definitions.push(definition);
       }
     } catch (error) {
-      console.error(`Error getting tools from ${serverName} MCP server:`, error);
+      console.error(`Error creating function definitions for server ${serverName}:`, error);
     }
   }
+  
+  // Return all the collected function definitions
   
   // Also add Oura tools directly (if not already added through mcpServers)
   if (!mcpServers.oura) {
     for (const tool of ouraTools) {
       // Add only if not already added
-      if (!definitions.some(def => def.name === `mcp_oura_${tool.name}`)) {
+      if (!definitions.some(def => def.function.name === `mcp_oura_${tool.name}`)) {
         // Transform the MCP tool schema to Ollama function definition
-        const definition: OllamaFunctionDefinition = {
+        const functionDef = {
           name: `mcp_oura_${tool.name}`,
           description: `${tool.description} (via Oura MCP server)`,
           parameters: {
             type: 'object',
-            properties: {},
-            required: []
+            properties: {} as Record<string, { type: string; description: string; enum?: string[]; items?: any }>,
+            required: [] as string[]
           }
+        };
+        
+        const definition: OllamaFunctionDefinition = {
+          type: 'function',
+          function: functionDef
         };
         
         // Convert input schema to Ollama parameters
         if (tool.inputSchema && tool.inputSchema.properties) {
           for (const [key, prop] of Object.entries(tool.inputSchema.properties)) {
             // Cast unknown property to expected shape and use default values if missing
-            const typedProp = prop as { type?: string; description?: string; enum?: string[] };
-            definition.parameters.properties[key] = {
+            const typedProp = prop as { type?: string; description?: string; enum?: string[]; items?: any };
+            functionDef.parameters.properties[key] = {
               type: typedProp.type || 'string',
               description: typedProp.description || ''
             };
             
             // Add enum if available
             if (typedProp.enum) {
-              definition.parameters.properties[key].enum = typedProp.enum;
+              functionDef.parameters.properties[key].enum = typedProp.enum;
             }
           }
           
           // Add required parameters
           if (tool.inputSchema.required) {
-            definition.parameters.required = tool.inputSchema.required;
+            functionDef.parameters.required = tool.inputSchema.required;
           }
         }
         
+        // Add the wrapped function definition to our list
         definitions.push(definition);
       }
     }
@@ -289,7 +307,7 @@ export function enhanceOllamaWithMcp(ollama: OllamaClient): OllamaClient {
   if (process.env.DEBUG_MCP_TOOLS === 'true') {
     console.log('Available MCP tools:');
     for (const fn of mcpFunctions) {
-      console.log(` - ${fn.name}: ${fn.description.substring(0, 50)}...`);
+      console.log(` - ${fn.function.name}: ${fn.function.description.substring(0, 50)}...`);
     }
   }
   
@@ -298,6 +316,12 @@ export function enhanceOllamaWithMcp(ollama: OllamaClient): OllamaClient {
   
   // Override chat method to include MCP functions
   ollama.chat = async (options: any) => {
+    // Log the options received
+    console.log('MCP Chat called with options:', { 
+      model: options.model,
+      enabledMcpTools: options.enabledMcpTools,
+      messageCount: options.messages?.length || 0
+    });
     // Add tools to options if not disabled
     if (!options.disableMcpTools) {
       // Determine which MCP functions to include based on enabledMcpTools if provided
@@ -308,8 +332,8 @@ export function enhanceOllamaWithMcp(ollama: OllamaClient): OllamaClient {
         mcpToolsToInclude = mcpFunctions.filter(fn => {
           // Check if tool name is in the enabled list (allowing for both mcp_server_tool and just tool formats)
           return options.enabledMcpTools.some((enabledTool: string) => {
-            const fullToolName = fn.name;
-            const shortToolName = fn.name.split('_').slice(2).join('_'); // Get just the tool part
+            const fullToolName = fn.function.name;
+            const shortToolName = fn.function.name.split('_').slice(2).join('_'); // Get just the tool part
             return fullToolName === enabledTool || shortToolName === enabledTool;
           });
         });
@@ -320,6 +344,11 @@ export function enhanceOllamaWithMcp(ollama: OllamaClient): OllamaClient {
         ...(options.tools || []),
         ...mcpToolsToInclude
       ];
+      
+      // Explicitly set format for Ollama function calling
+      options.format = 'json'; // Ensure JSON format for function calling
+      options.tool_choice = 'auto'; // Let model decide when to call tools
+      options.function_calling = 'enabled'; // Explicitly enable function calling
       
       // If debug is enabled, log the tools we're using
       if (process.env.DEBUG_MCP_TOOLS === 'true') {
@@ -416,31 +445,107 @@ export function enhanceOllamaWithMcp(ollama: OllamaClient): OllamaClient {
         let mcpToolsToInclude = mcpFunctions;
         
         if (options.enabledMcpTools && Array.isArray(options.enabledMcpTools) && options.enabledMcpTools.length > 0) {
+          // Filter enabled tools based on name matching (full or short name)
           mcpToolsToInclude = mcpFunctions.filter(fn => {
-            return options.enabledMcpTools.some((enabledTool: string) => {
-              const fullToolName = fn.name;
-              const shortToolName = fn.name.split('_').slice(2).join('_');
-              return fullToolName === enabledTool || shortToolName === enabledTool;
-            });
+            const fullToolName = fn.function.name;
+            const shortToolName = fn.function.name.split('_').slice(2).join('_');
+            
+            return options.enabledMcpTools.some((enabledTool: string) => 
+              fullToolName === enabledTool || shortToolName === enabledTool
+            );
           });
+          
+          console.log(`Streaming: Using ${mcpToolsToInclude.length} enabled MCP tools out of ${mcpFunctions.length} available`);
+          
+          // Debug log the enabled tools
+          if (process.env.DEBUG_MCP_TOOLS === 'true' || process.env.NODE_ENV === 'development') {
+            console.log('Enabled MCP tools for streaming:');
+            mcpToolsToInclude.forEach(tool => console.log(` - ${tool.function.name}`));
+          }
         }
         
+        // Add tools to options
         options.tools = [
           ...(options.tools || []),
           ...mcpToolsToInclude
         ];
+        
+        // Explicitly set format for Ollama function calling
+        options.format = 'json'; // Ensure JSON format for function calling
+        options.tool_choice = 'auto'; // Let model decide when to call tools
+        options.function_calling = 'enabled'; // Explicitly enable function calling
+        
+        console.log('Streaming chat with MCP tools enabled:', 
+          options.enabledMcpTools || 'all',
+          'Tool count:', options.tools.length);
       }
+      
+      // Collect all chunks to process tool calls at the end
+      const allChunks: OllamaStreamingResponse[] = [];
+      let finalMessage: OllamaMessage | null = null;
       
       // Process streaming response
       for await (const chunk of originalStreamingChat!(options)) {
-        yield chunk as OllamaStreamingResponse;
+        const typedChunk = chunk as OllamaStreamingResponse;
+        allChunks.push(typedChunk);
         
-        // Handle tool calls at the end of streaming
-        if ((chunk as OllamaStreamingResponse).done && 
-            (chunk as OllamaStreamingResponse).message && 
-            (chunk as OllamaStreamingResponse).message.tool_calls?.length > 0) {
-          // We'll need to handle tool calls separately after streaming completes
-          console.log('Streaming completed with tool calls, will handle them after yield');
+        // Yield each chunk as normal
+        yield typedChunk;
+        
+        // If this is the final chunk, process any tool calls
+        if (typedChunk.done && typedChunk.message) {
+          finalMessage = typedChunk.message;
+          
+          // Check for tool calls
+          const toolCalls = finalMessage.tool_calls;
+          if (toolCalls && toolCalls.length > 0) {
+            console.log(`Streaming completed with ${toolCalls.length} tool calls - processing now...`);
+            
+            // Process MCP tool calls
+            for (const toolCall of toolCalls) {
+              if (toolCall.name.startsWith('mcp_')) {
+                console.log(`[Streaming] Processing MCP tool call: ${toolCall.name} with ID ${toolCall.id}`);
+                let toolArguments: Record<string, any>;
+                
+                try {
+                  // Parse the tool arguments
+                  toolArguments = JSON.parse(toolCall.arguments);
+                  console.log('[Streaming] Parsed tool arguments:', toolArguments);
+                  
+                  // Process MCP function call
+                  console.log(`[Streaming] Executing MCP function: ${toolCall.name}`);
+                  const functionCallResult = await processMcpFunctionCall({
+                    name: toolCall.name,
+                    arguments: toolArguments
+                  });
+                  
+                  // Add tool results to messages for subsequent processing
+                  if (!options.messages) options.messages = [];
+                  
+                  console.log(`[Streaming] Tool execution complete: ${functionCallResult.content.substring(0, 50)}...`);
+                  
+                  // Update messages with the assistant's response containing the tool call
+                  options.messages.push(finalMessage);
+                  
+                  // Add the tool response
+                  options.messages.push({
+                    role: 'tool',
+                    name: toolCall.name,
+                    content: functionCallResult.content,
+                    tool_call_id: toolCall.id
+                  });
+                  
+                  // Generate a new response based on the tool result
+                  // We would ideally yield the new response chunks here, but that's complex in a generator
+                  // Instead, we'll log that the tool execution is complete
+                  console.log('[Streaming] Tool execution complete. Client should request a follow-up response.');
+                  
+                } catch (error) {
+                  console.error(`[Streaming] Error processing MCP function call ${toolCall.name}:`, error);
+                }
+              }
+            }
+          }
         }
       }
     };

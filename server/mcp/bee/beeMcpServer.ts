@@ -5,7 +5,7 @@
  * for the Bee AI transcription memory API.
  */
 
-import { BeeClient, BeeSearchQuery } from "../../bee";
+import { BeeClient, BeeSearchQuery } from "../../bee.js";
 
 // Define interfaces for MCP tools and parameters
 interface McpTool {

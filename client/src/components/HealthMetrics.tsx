@@ -1,8 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { apiRequest } from "@/lib/queryClient";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.js";
+import { Button } from "@/components/ui/button.js";
+import { Badge } from "@/components/ui/badge.js";
+import { apiRequest } from "@/lib/queryClient.js";
 import { Heart, Activity, Moon, Zap, RefreshCw, Download, TrendingUp } from "lucide-react";
 
 // Define types for the API responses

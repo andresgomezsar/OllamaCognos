@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import OmiImporter from '../components/OmiImporter';
+import OmiImporter from '../components/OmiImporter.js';
 
 const OmiIntegration: React.FC = () => {
   const [webhookStatus, setWebhookStatus] = useState<any>(null);

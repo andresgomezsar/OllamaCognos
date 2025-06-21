@@ -1,9 +1,9 @@
 import express, { type Request, type Response, type NextFunction } from "express";
-import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
-import { initializeNgrok } from "./ngrok";
-import { initializeAuth, initializeAdminUser } from "./auth";
-import { authRoutes } from "./authRoutes";
+import { registerRoutes } from "./routes.js";
+import { setupVite, serveStatic, log } from "./vite.js";
+import { initializeNgrok } from "./ngrok.js";
+import { initializeAuth, initializeAdminUser } from "./auth.js";
+import { authRoutes } from "./authRoutes.js";
 
 const app = express();
 app.use(express.json());
@@ -107,7 +107,7 @@ process.on('uncaughtException', (error) => {
   const port = process.env.PORT ? parseInt(process.env.PORT) : 3001;
   server.listen({
     port,
-    host: "localhost",
+    host: "0.0.0.0", // Listen on all interfaces to allow tunnel access
   }, async () => {
     console.log(`Server is now running on http://localhost:${port}`);
     log(`serving on port ${port}`);

@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import bcrypt from 'bcryptjs';
-import { customAlphabet } from '../shared/utils/nanoid-compat';
+import { customAlphabet } from '../shared/utils/nanoid-compat.js';
 const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 10);
 
 // Define user type

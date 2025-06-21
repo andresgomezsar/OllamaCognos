@@ -1,7 +1,7 @@
-import { storage } from './storage';
-import { createOuraClient } from './oura';
-import { createOpenRouterClient } from './openrouter';
-import { createPerplexityClient } from './perplexity';
+import { storage } from './storage.js';
+import { createOuraClient } from './oura.js';
+import { createOpenRouterClient } from './openrouter.js';
+import { createPerplexityClient } from './perplexity.js';
 
 interface MCPTool {
   name: string;

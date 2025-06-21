@@ -1,7 +1,7 @@
 /**
  * Client Utilities - Factory functions for creating API clients
  */
-import { OllamaClient } from '../ollama';
+import { OllamaClient } from '../ollama.js';
 
 /**
  * Interface for OpenRouter API client

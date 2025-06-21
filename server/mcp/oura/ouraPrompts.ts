@@ -1,4 +1,4 @@
-import { Prompt } from "../types";
+import { Prompt } from "../types.js";
 
 // Define the prompts with guidance for automatic correlation
 export const getReadinessPrompt: Prompt = {

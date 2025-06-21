@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { Tool } from '../types';
-import { MemoryFilterOptions } from './omiMemoryClient';
+import { Tool } from '../types.js';
+import { MemoryFilterOptions } from './omiMemoryClient.js';
 
 /**
  * MCP tools for Cognos audio processing system

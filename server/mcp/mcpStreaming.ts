@@ -5,7 +5,7 @@
 import { EventEmitter } from 'events';
 import { v4 as uuidv4 } from 'uuid';
 import debug from 'debug';
-import { MCPToolResultContentItem } from './mcpUtils';
+import { MCPToolResultContentItem } from './mcpUtils.js';
 
 const log = debug('cognos:mcp:streaming');
 

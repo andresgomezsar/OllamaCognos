@@ -13,7 +13,7 @@ import {
   registerUser as registerLocalUser,
   changeUserPassword,
   User
-} from './localAuth';
+} from './localAuth.js';
 
 dotenv.config();
 

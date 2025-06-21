@@ -1,9 +1,9 @@
 /**
  * MCP Index - Main entry point for MCP integration
  */
-import { mcpRouter, mcpRoutingService, initMcpServers } from './mcpRouter';
-import { ouraTools } from './oura/ouraTools';
-import { ouraPrompts } from './oura/ouraPrompts';
+import { mcpRouter, mcpRoutingService, initMcpServers } from './mcpRouter.js';
+import { ouraTools } from './oura/ouraTools.js';
+import { ouraPrompts } from './oura/ouraPrompts.js';
 
 // Initialize all MCP servers on startup
 export function initializeMcpSystem() {

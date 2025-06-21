@@ -1,24 +1,24 @@
 // Import wouter from our compatibility layer using ESM syntax
-import { Switch, Route, Redirect } from "./wouter-compat";
-import { queryClient } from "./lib/queryClient";
+import { Switch, Route, Redirect } from "./wouter-compat.js";
+import { queryClient } from "./lib/queryClient.js";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { Sidebar } from "@/components/Sidebar";
-import { MobileNav } from "@/components/MobileNav";
-import Dashboard from "@/pages/dashboard";
-import Chat from "@/pages/chat";
-import Settings from "@/pages/settings";
-import Health from "@/pages/health";
-import Integrations from "@/pages/integrations";
-import OmiIntegration from "@/pages/omi-integration";
-import NotFound from "@/pages/not-found";
-import Login from "@/pages/login";
-import { AuthProvider } from "./lib/auth-context";
-import { ProtectedRoute } from "./components/ProtectedRoute";
-import { useAuth } from "./lib/auth-context";
+import { Toaster } from "@/components/ui/toaster.js";
+import { TooltipProvider } from "@/components/ui/tooltip.js";
+import { Sidebar } from "@/components/Sidebar.js";
+import { MobileNav } from "@/components/MobileNav.js";
+import Dashboard from "@/pages/dashboard.js";
+import Chat from "@/pages/chat.js";
+import Settings from "@/pages/settings.js";
+import Health from "@/pages/health.js";
+import Integrations from "@/pages/integrations.js";
+import OmiIntegration from "@/pages/omi-integration.js";
+import NotFound from "@/pages/not-found.js";
+import Login from "@/pages/login.js";
+import { AuthProvider } from "./lib/auth-context.js";
+import { ProtectedRoute } from "./components/ProtectedRoute.js";
+import { useAuth } from "./lib/auth-context.js";
 import { useState, useEffect } from "react";
-import { OnboardingProvider } from "./components/onboarding/OnboardingProvider";
+import { OnboardingProvider } from "./components/onboarding/OnboardingProvider.js";
 
 function Router() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);

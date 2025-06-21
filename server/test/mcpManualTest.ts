@@ -3,7 +3,7 @@
  * Simple script to test the enhanced tool selection logic
  */
 
-import { mcpRoutingService } from '../mcp/mcpRouter';
+import { mcpRoutingService } from '../mcp/mcpRouter.js';
 
 // Test scenarios for different tool categories
 const testScenarios = [

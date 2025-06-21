@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAuth } from '../lib/auth-context';
+import { useAuth } from '../lib/auth-context.js';
 // Import wouter from our compatibility layer
 const { useLocation } = require("../wouter-compat");
 

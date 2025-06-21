@@ -1,5 +1,4 @@
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge.js";
 import { Brain, User, Heart, Clock, Zap } from "lucide-react";
 
 interface ChatMessageProps {

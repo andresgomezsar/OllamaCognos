@@ -1,13 +1,13 @@
 import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
-import { isAuthenticated } from "../auth";
-import { LimitlessMcpServer, createLimitlessMcpServer } from "./limitless/limitlessMcpServer";
-import { OuraMcpServer, createOuraMcpServer } from "./oura/ouraMcpServer";
-import { BeeMcpServer, createBeeMcpServer } from "./bee/beeMcpServer";
-import { CognosMcpServer, createCognosMcpServer } from "./cognos/cognosMcpServer";
-import { InMemoryTokenStore } from './auth/authProvider';
-import { SecurityMiddleware } from './auth/securityMiddleware';
+import { isAuthenticated } from "../auth.js";
+import { LimitlessMcpServer, createLimitlessMcpServer } from "./limitless/limitlessMcpServer.js";
+import { OuraMcpServer, createOuraMcpServer } from "./oura/ouraMcpServer.js";
+import { BeeMcpServer, createBeeMcpServer } from "./bee/beeMcpServer.js";
+import { CognosMcpServer, createCognosMcpServer } from "./cognos/cognosMcpServer.js";
+import { InMemoryTokenStore } from './auth/authProvider.js';
+import { SecurityMiddleware } from './auth/securityMiddleware.js';
 import path from 'path';
 
 // Import the MockOmiMemoryClient for testing - only in development environments
