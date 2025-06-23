@@ -1,8 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.js";
-import { Button } from "@/components/ui/button.js";
-import { Badge } from "@/components/ui/badge.js";
-import { apiRequest } from "@/lib/queryClient.js";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { apiRequest } from "@/lib/queryClient";
 import { Heart, Activity, Moon, Zap, RefreshCw, Download, TrendingUp } from "lucide-react";
 
 // Define types for the API responses
@@ -62,7 +62,16 @@ export function HealthMetrics() {
   });
 
   const getLatestData = (dataType: string) => {
-    return healthData?.find((item: any) => item.dataType === dataType);
+    const item = healthData?.find((d: any) => d.dataType === dataType);
+    if (item && typeof item.value === 'string') {
+      try {
+        return { ...item, value: JSON.parse(item.value) };
+      } catch (e) {
+        console.error('Failed to parse health data value:', e);
+        return item; // Return original item if parsing fails
+      }
+    }
+    return item;
   };
 
   const sleepData = getLatestData('sleep');

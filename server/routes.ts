@@ -3,7 +3,7 @@ import express, { Request, Response } from 'express';
 import http from 'http';
 import axios from 'axios';
 
-import { OllamaClient } from './ollama.js';
+import { ollamaClient, OllamaClient } from './ollama.js';
 import { OuraClient } from './oura.js';
 import { PerplexityClient } from './perplexity.js';
 import { OpenRouterClient } from './openrouter.js';
@@ -31,7 +31,7 @@ import {
 // Storage, auth, and utilities
 import { storage } from "./storage.js";
 import { isAuthenticated } from "./auth.js";
-import { ngrokService } from "./ngrok.js";
+
 // Use direct import with relative path
 import { executeMCPTool } from "./mcp/mcpUtils.js";
 import { createOllamaClient, createOpenRouterClient, listMCPTools } from "./clients/clientUtils.js";
@@ -612,39 +612,15 @@ export function registerRoutes(app: express.Application) {
         content: `You are Cognos, a personal AI assistant with access to health data and web search. You provide helpful, accurate responses with a focus on health insights when relevant. Be conversational and supportive.${contextData}`
       };
 
-      // Get AI response from OpenRouter or Ollama
-      let response;
-      if (process.env.OPENROUTER_API_KEY) {
-        // Simplified check since we don't have OpenRouterClient class yet
-        const openRouterHealthy = !!process.env.OPENROUTER_API_KEY;
-        if (openRouterHealthy) {
-          const openRouterClient = createOpenRouterClient(process.env.OPENROUTER_API_KEY);
-          const openRouterResponse = await openRouterClient.chat({
-            model: 'anthropic/claude-3.5-sonnet',
-            messages: [systemMessage, ...ollamaMessages],
-            temperature: 0.7
-          });
-          response = {
-            message: openRouterResponse.choices[0].message
-          };
-        } else {
-          // Fallback to Ollama
-          const ollamaClient = createOllamaClient(settings.ollamaUrl);
-          response = await ollamaClient.chat({
-            model: settings.ollamaModel,
-            messages: [systemMessage, ...ollamaMessages],
-            temperature: 0.7
-          });
-        }
-      } else {
-        // Fallback to Ollama
-        const ollamaClient = createOllamaClient(settings.ollamaUrl);
-        response = await ollamaClient.chat({
-          model: settings.ollamaModel,
-          messages: [systemMessage, ...ollamaMessages],
-          temperature: 0.7
-        });
-      }
+      // Get AI response from Ollama
+      console.log(`Attempting to connect to Ollama at: ${settings.ollamaUrl} with model: ${settings.ollamaModel}`);
+      const ollamaClient = createOllamaClient(settings.ollamaUrl);
+      const response = await ollamaClient.chat({
+        model: settings.ollamaModel,
+        messages: [systemMessage, ...ollamaMessages],
+        temperature: 0.7
+      });
+      console.log('Successfully received response from Ollama.');
 
       // Store AI response
       const aiMessage = await storage.createMessage({
@@ -676,6 +652,17 @@ export function registerRoutes(app: express.Application) {
     }
   }
 
+  // Ollama models endpoint
+  app.get('/api/ollama/models', isAuthenticated, async (req, res) => {
+    try {
+      const models = await ollamaClient.listModels();
+      res.json(models.models.map((m: { name: string }) => m.name));
+    } catch (error) {
+      console.error('Error fetching Ollama models:', error);
+      res.status(500).json({ error: 'Failed to fetch Ollama models' });
+    }
+  });
+
   // Health data endpoints
   app.get('/api/health', isAuthenticated, async (req, res) => {
     try {
@@ -684,6 +671,7 @@ export function registerRoutes(app: express.Application) {
         ...req.query,
         limit: req.query.limit ? parseInt(req.query.limit as string) : 50
       };
+      delete (queryParams as any).userId;
       const query = healthQuerySchema.parse(queryParams);
       const userId = (req.user as any)?.id || 1;
       
@@ -1097,11 +1085,7 @@ export function registerRoutes(app: express.Application) {
           configured: !!process.env.PERPLEXITY_API_KEY
         },
         mcpTools: settings.enabledMcpTools || [],
-        ngrok: {
-          isActive: ngrokService.isActive(),
-          tunnelUrl: ngrokService.getTunnelUrl(),
-          endpoints: ngrokService.getApiEndpoints()
-        }
+
       });
     } catch (error) {
       res.status(500).json({
@@ -1111,57 +1095,7 @@ export function registerRoutes(app: express.Application) {
     }
   });
 
-  // Ngrok tunnel management
-  app.post('/api/ngrok/start', isAuthenticated, async (req, res) => {
-    try {
-      const { authtoken, region, subdomain } = req.body;
-      const url = await ngrokService.startTunnel({
-        port: 5000,
-        authtoken,
-        region,
-        subdomain
-      });
-      res.json({
-        success: true,
-        tunnelUrl: url,
-        endpoints: ngrokService.getApiEndpoints()
-      });
-    } catch (error) {
-      res.status(500).json({
-        error: 'Failed to start tunnel',
-        message: error instanceof Error ? error.message : 'Unknown error'
-      });
-    }
-  });
 
-  app.post('/api/ngrok/stop', isAuthenticated, async (req, res) => {
-    try {
-      await ngrokService.stopTunnel();
-      res.json({ success: true, message: 'Tunnel stopped' });
-    } catch (error) {
-      res.status(500).json({
-        error: 'Failed to stop tunnel',
-        message: error instanceof Error ? error.message : 'Unknown error'
-      });
-    }
-  });
-
-  app.get('/api/ngrok/status', isAuthenticated, async (req, res) => {
-    try {
-      const info = await ngrokService.getConnectionInfo();
-      res.json({
-        isActive: ngrokService.isActive(),
-        tunnelUrl: ngrokService.getTunnelUrl(),
-        endpoints: ngrokService.getApiEndpoints(),
-        ...info
-      });
-    } catch (error) {
-      res.status(500).json({
-        error: 'Failed to get tunnel status',
-        message: error instanceof Error ? error.message : 'Unknown error'
-      });
-    }
-  });
 
   return server;
 }

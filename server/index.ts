@@ -1,7 +1,7 @@
 import express, { type Request, type Response, type NextFunction } from "express";
 import { registerRoutes } from "./routes.js";
 import { setupVite, serveStatic, log } from "./vite.js";
-import { initializeNgrok } from "./ngrok.js";
+import { initializeTunnels } from "./tunnel.js";
 import { initializeAuth, initializeAdminUser } from "./auth.js";
 import { authRoutes } from "./authRoutes.js";
 
@@ -112,9 +112,9 @@ process.on('uncaughtException', (error) => {
     console.log(`Server is now running on http://localhost:${port}`);
     log(`serving on port ${port}`);
     
-    // Initialize ngrok after server starts
-    console.log('Initializing ngrok tunnel...');
-    await initializeNgrok();
+    // Initialize tunneling service
+    console.log('Initializing tunnels...');
+    await initializeTunnels(port);
     console.log('Server initialization complete');
   });
 })().catch((error: unknown) => {

@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.js';
-import { Button } from '@/components/ui/button.js';
-import { Input } from '@/components/ui/input.js';
-import { Label } from '@/components/ui/label.js';
-import { Switch } from '@/components/ui/switch.js';
-import { Badge } from '@/components/ui/badge.js';
-import { Separator } from '@/components/ui/separator.js';
-import { useToast } from '@/hooks/use-toast.js';
-import { settingsApi, statusApi, configApi } from '@/lib/api.js';
-import { Settings, Zap, Shield, Database, Bot, Activity, Watch, PanelRightOpen } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { useToast } from '@/hooks/use-toast';
+import { settingsApi, statusApi, configApi } from '@/lib/api';
+import { Settings, Zap, Shield, Database, Bot, Activity } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // Define interface for configuration items
 interface ConfigItem {
@@ -83,6 +84,29 @@ export default function SettingsPage() {
 
   const [testingGroq, setTestingGroq] = useState(false);
   const [groqTestResult, setGroqTestResult] = useState<{success: boolean; message: string} | null>(null);
+
+  const { data: ollamaModels, isLoading: modelsLoading } = useQuery<string[]>({
+    queryKey: ['/api/ollama/models'],
+    queryFn: async () => {
+      try {
+        const response = await fetch('/api/ollama/models');
+        if (!response.ok) {
+          console.error('Failed to fetch Ollama models');
+          return []; // Return empty array on failure
+        }
+        const data = await response.json();
+        // Ensure the currently selected model is in the list
+        if (settings?.data?.ollamaModel && !data.includes(settings.data.ollamaModel)) {
+          return [settings.data.ollamaModel, ...data];
+        }
+        return data;
+      } catch (error) {
+        console.error('Error fetching Ollama models:', error);
+        return [];
+      }
+    },
+    enabled: !settingsLoading, // Only fetch when settings are loaded
+  });
 
   // Load configuration data
   const { data: configurations } = useQuery({
@@ -235,7 +259,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-8">
+    <div className="container mx-auto p-6 space-y-8 pb-24 overflow-y-auto">
       <div className="flex items-center gap-2">
         <Settings className="h-6 w-6" />
         <h1 className="text-2xl font-bold">Settings</h1>
@@ -321,14 +345,29 @@ export default function SettingsPage() {
                 
                 <div className="space-y-2">
                   <Label htmlFor="ollamaModel">Ollama Model</Label>
-                  <Input
-                    id="ollamaModel"
+                  <Select
                     value={formData.ollamaModel}
-                    onChange={(e) => setFormData({ ...formData, ollamaModel: e.target.value })}
-                    placeholder="qwen3:14b"
-                  />
-                  <p className="text-xs text-gray-500">
-                    Recommended: qwen3:14b, qwen2.5vl:32b, deepseek-r1:32b, llama3.2-vision
+                    onValueChange={(value) => setFormData({ ...formData, ollamaModel: value })}
+                    disabled={modelsLoading || !ollamaModels || ollamaModels.length === 0}
+                  >
+                    <SelectTrigger id="ollamaModel">
+                      <SelectValue placeholder="Select a model..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {modelsLoading && <SelectItem value="loading" disabled>Loading models...</SelectItem>}
+                      {ollamaModels && ollamaModels.length > 0 ? (
+                        ollamaModels.map((model) => (
+                          <SelectItem key={model} value={model}>
+                            {model}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        !modelsLoading && <SelectItem value="no-models" disabled>No models found</SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-sm text-muted-foreground">
+                    Select a model from your Ollama instance.
                   </p>
                 </div>
               </div>

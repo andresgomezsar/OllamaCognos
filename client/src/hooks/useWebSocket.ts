@@ -24,8 +24,18 @@ export function useWebSocket() {
       // Use a fixed backend port (3000) for WebSocket connections in development
       // This ensures WebSockets connect to the correct port even when Vite HMR uses a different port
       const port = '3000'; // Explicitly define port for all environments
-      const host = `${window.location.hostname}:${port}`;
+      
+      // Ensure we have a valid host - always use configured port, not window.location.port
+      let host;
+      if (window.location.hostname) {
+        host = `${window.location.hostname}:${port}`;
+      } else {
+        console.error('Error: window.location.hostname is undefined');
+        host = `localhost:${port}`; // Fallback
+      }
         
+      // Ensure path matches server-side WebSocket path configuration
+      // The server sets up WebSocket at path '/ws' in routes.ts
       let wsUrl = `${protocol}//${host}/ws`;
       if (authToken) {
         wsUrl = `${wsUrl}?token=${encodeURIComponent(authToken)}`;

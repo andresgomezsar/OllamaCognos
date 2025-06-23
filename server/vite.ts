@@ -2,7 +2,9 @@ import express, { type Express } from "express";
 import fs from "fs";
 import path from "path";
 import { type Server } from "http";
-import * as vite from "vite";
+// NOTE: Do NOT import the "vite" package at module scope because our file name is also "vite.ts"
+// which can lead to Node resolution confusion and return this very module instead of the real Vite package.
+// We will instead load Vite dynamically inside setupVite().
 import { customAlphabet } from '../shared/utils/nanoid-compat.js';
 
 // ESM compatibility: use process.cwd() as base path instead of __dirname
@@ -53,7 +55,13 @@ export async function setupVite(app: Express, server: Server) {
   }
 
   // Create Vite dev server
-  const devServer = await vite.createServer({
+    // Dynamically import the real Vite package to avoid self-import issues
+  const { createServer } = await import('vite');
+  console.log('Vite createServer typeof:', typeof createServer);
+  if (typeof createServer !== 'function') {
+    throw new Error('Vite package did not provide createServer – check installed version');
+  }
+  const devServer = await createServer({
     ...viteConfig,
     configFile: false,
     // Removed customLogger to use default Vite logger
