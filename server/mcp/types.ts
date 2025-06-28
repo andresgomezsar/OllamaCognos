@@ -1,6 +1,9 @@
 // MCP Type Definitions
 // Based on Model Context Protocol specification
 
+// Provider type enum
+export type ProviderType = "ollama" | "lmstudio";
+
 // Tool definition
 export interface Tool {
   name: string;

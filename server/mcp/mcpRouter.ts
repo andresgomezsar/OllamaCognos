@@ -2,13 +2,13 @@ import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 import { isAuthenticated } from "../auth.js";
-import { LimitlessMcpServer, createLimitlessMcpServer } from "./limitless/limitlessMcpServer.js";
-import { OuraMcpServer, createOuraMcpServer } from "./oura/ouraMcpServer.js";
-import { BeeMcpServer, createBeeMcpServer } from "./bee/beeMcpServer.js";
-import { CognosMcpServer, createCognosMcpServer } from "./cognos/cognosMcpServer.js";
+import { createLimitlessMcpServer } from "./limitless/limitlessMcpServer.js";
+import { createOuraMcpServer } from "./oura/ouraMcpServer.js";
+import { createBeeMcpServer } from "./bee/beeMcpServer.js";
+import { createCognosMcpServer } from "./cognos/cognosMcpServer.js";
+import { createLMStudioMcpServer } from "./lmstudio/lmstudioMcpServer.js";
 import { InMemoryTokenStore } from './auth/authProvider.js';
 import { SecurityMiddleware } from './auth/securityMiddleware.js';
-import path from 'path';
 
 // MockOmiMemoryClient has been deprecated
 
@@ -201,44 +201,71 @@ function listMCPTools(): string[] {
 /**
  * Initialize MCP servers with environment variables or configuration
  */
-export async function initMcpServers() {
-  console.log('Initializing MCP servers...');
+export function initMcpServers() {
+  console.log('Initializing MCP servers');
+
+  try {
+    // Register the Limitless MCP server if API token is available
+    if (process.env.LIMITLESS_API_TOKEN) {
+      console.log('Registering Limitless MCP server');
+      const limitlessMcpServer = createLimitlessMcpServer(process.env.LIMITLESS_API_TOKEN);
+      mcpServers['limitless'] = limitlessMcpServer;
+    }
+  } catch (error) {
+    console.error('Failed to initialize Limitless MCP server:', error);
+  }
   
   try {
-    // Initialize Oura MCP server if configured
-    const ouraToken = process.env.OURA_TOKEN;
-    if (ouraToken) {
-      console.log('Initializing Oura MCP Server...');
-      mcpServers.oura = createOuraMcpServer(ouraToken);
-      console.log('Oura MCP Server initialized!');
-    } else {
-      console.log('Skipping Oura MCP Server initialization (OURA_TOKEN not found)');
+    // Register the Oura MCP server if API token is available
+    if (process.env.OURA_TOKEN) {
+      console.log('Registering Oura MCP server');
+      const ouraMcpServer = createOuraMcpServer(process.env.OURA_TOKEN);
+      mcpServers['oura'] = ouraMcpServer;
     }
-    
-    // Initialize Limitless MCP server (no specific config needed)
-    console.log('Initializing Limitless MCP Server...');
-    mcpServers.limitless = createLimitlessMcpServer("");
-    console.log('Limitless MCP Server initialized!');
-    
-    // Initialize Bee MCP server if configured
+  } catch (error) {
+    console.error('Failed to initialize Oura MCP server:', error);
+  }
+
+  try {
+    // Register the LM Studio MCP server if enabled
+    if (process.env.LMSTUDIO_URL) {
+      console.log('Registering LM Studio MCP server');
+      const lmStudioUrl = process.env.LMSTUDIO_URL || 'http://localhost:1234';
+      const lmStudioMcpServer = createLMStudioMcpServer(lmStudioUrl);
+      mcpServers['lmstudio'] = lmStudioMcpServer;
+      console.log('LM Studio MCP Server initialized!');
+    }
+  } catch (error) {
+    console.error('Failed to initialize LM Studio MCP server:', error);
+  }
+
+  try {
+    // Register the Bee MCP server
+    console.log('Registering Bee MCP server');
     const beeApiKey = process.env.BEE_API_KEY;
+    
     if (beeApiKey) {
-      console.log('Initializing Bee MCP Server...');
-      mcpServers.bee = createBeeMcpServer(beeApiKey);
+      const beeMcpServer = createBeeMcpServer(beeApiKey);
+      mcpServers['bee'] = beeMcpServer;
       console.log('Bee MCP Server initialized!');
     } else {
-      console.log('Skipping Bee MCP Server initialization (BEE_API_KEY not found)');
+      console.log('Skipping Bee MCP Server initialization: BEE_API_KEY not found');
     }
-    
-    // Initialize Cognos Audio Processing MCP server
-    console.log('Initializing Cognos MCP Server...');
+  } catch (error) {
+    console.error('Failed to initialize Bee MCP server:', error);
+  }
+  
+  try {
+    // Register the Cognos MCP server
+    console.log('Registering Cognos MCP server');
     const pythonPath = process.env.COGNOS_PYTHON_PATH || 'python';
     const cognosPipelinePath = process.env.COGNOS_PIPELINE_PATH || process.cwd();
     
     // MockOmiMemoryClient has been deprecated
     const mockClient = null;
     
-    mcpServers.cognos = createCognosMcpServer(pythonPath, cognosPipelinePath, mockClient);
+    const cognosMcpServer = createCognosMcpServer(pythonPath, cognosPipelinePath, mockClient);
+    mcpServers['cognos'] = cognosMcpServer;
     console.log('Cognos MCP Server initialized!');
     
     console.log(`MCP servers initialized: ${Object.keys(mcpServers).join(', ')}`);

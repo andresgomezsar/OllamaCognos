@@ -6,7 +6,7 @@
 [![Ollama](https://img.shields.io/badge/Ollama-0.1.22-orange)](https://ollama.ai/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-An advanced Ollama-compatible personal AI assistant that integrates health data from Oura Ring, Bee transcriptions, and Limitless notes with local LLMs and cloud AI providers for comprehensive AI-powered health insights and analysis.
+An advanced AI assistant that integrates health data from Oura Ring, Bee transcriptions, and Limitless notes with local LLMs (via Ollama or LM Studio) and cloud AI providers for comprehensive AI-powered health insights and analysis.
 
 ## Table of Contents
 
@@ -28,7 +28,9 @@ An advanced Ollama-compatible personal AI assistant that integrates health data 
 
 ### 🤖 Dual AI Architecture
 - **Primary**: OpenRouter with Claude 3.5 Sonnet for advanced reasoning
-- **Local**: Ollama server integration with DeepSeek-R1 32B for privacy-focused processing
+- **Local**: Choose between Ollama or LM Studio for privacy-focused processing
+  - **Ollama**: Fast inference with DeepSeek-R1 32B and other models
+  - **LM Studio**: Native MCP support with flexible model loading
 - **Smart Routing**: Automatic model detection and provider selection
 - **Fallback Support**: Seamless switching between cloud and local AI
 
@@ -99,6 +101,7 @@ SESSION_SECRET=your-secret
 
 # AI Providers
 OLLAMA_URL=http://localhost:11434
+LMSTUDIO_URL=http://localhost:1234
 OPENROUTER_API_KEY=your-key
 
 # Health Services
@@ -107,8 +110,9 @@ BEE_API_TOKEN=your-token
 LIMITLESS_TOKEN=your-token
 ```
 
-### Setting Up Ollama
+### Setting Up Local AI
 
+#### Option 1: Ollama
 1. Install Ollama from [ollama.ai](https://ollama.ai)
 2. Start the Ollama service
 3. Pull recommended models:
@@ -116,6 +120,14 @@ LIMITLESS_TOKEN=your-token
    ollama pull deepseek-r1:32b
    ollama pull qwen3:30b
    ```
+
+#### Option 2: LM Studio
+1. Install LM Studio from [lmstudio.ai](https://lmstudio.ai) (version 0.3.17+ required)
+2. Start LM Studio and enable MCP server:
+   - Go to Settings > Advanced > Server
+   - Enable "Native MCP" (port 1234 by default)
+   - Set environment variable: `LMSTUDIO_URL=http://localhost:1234`
+3. Load models in LM Studio to make them available for MCP tools
 
 #### Remote Access Options
 
@@ -541,6 +553,24 @@ MIT License - see LICENSE file for details
 
 ## MCP and AI Model Integration
 
+### Local Provider Selection
+
+OllamaCognos supports two local AI providers: Ollama and LM Studio. You can choose which one to use by setting the appropriate environment variables:
+
+```bash
+# Use Ollama as the local provider
+OLLAMA_URL=http://localhost:11434
+
+# Use LM Studio as the local provider (requires LM Studio v0.3.17+)
+LMSTUDIO_URL=http://localhost:1234
+```
+
+If both environment variables are set, the system will prioritize based on:
+1. Provider health (reachable and responding)
+2. Configuration preference in settings
+
+For detailed instructions on configuring and using LM Studio with MCP, see `docs/LM_STUDIO_INTEGRATION.md`.
+
 ### What is MCP?
 MCP (Model Context Protocol) provides a standardized interface for AI models to access external tools and data sources. In OllamaCognos, the MCP implementation allows both local and cloud AI models to interact with services like Oura Ring, Bee Transcription, and Limitless Notes using consistent patterns.
 
@@ -594,17 +624,23 @@ MCP (Model Context Protocol) provides a standardized interface for AI models to 
 
 ### Supported AI Providers
 - **Ollama**: Local AI with function calling support
+- **LM Studio**: Local AI with native MCP support (v0.3.17+)
 - **OpenRouter**: Cloud-based models with advanced reasoning
 
 ## Troubleshooting
 
 ### Common Issues
 
-#### Connection to Ollama fails
-- Verify Ollama service is running (`ps aux | grep ollama`)
-- Check `OLLAMA_URL` in `.env` matches your Ollama endpoint
-- If using ngrok, ensure the URL is current (ngrok URLs expire)
-- Run the test script: `node test-ollama-connection.js`
+#### Connection to Local AI Provider fails
+- **Ollama**:
+  - Verify Ollama service is running (`ps aux | grep ollama`)
+  - Check `OLLAMA_URL` in `.env` matches your Ollama endpoint
+  - Run the test script: `node test-ollama-connection.js`
+- **LM Studio**:
+  - Verify LM Studio is running with Native MCP server enabled
+  - Check `LMSTUDIO_URL` in `.env` matches your LM Studio MCP endpoint (default: http://localhost:1234)
+  - Ensure you have at least one model loaded in LM Studio
+  - For details, see `docs/LM_STUDIO_INTEGRATION.md`
 
 #### TypeScript Compilation Errors
 - Run `npx tsc --noEmit` to identify specific errors
@@ -623,26 +659,29 @@ MCP (Model Context Protocol) provides a standardized interface for AI models to 
 
 ## Known Issues
 
-### MCP Tool-Calling with Ollama
+### MCP Tool-Calling with Local AI
 
-This project implements Model Context Protocol (MCP) tool-calling with Ollama, allowing language models to interact with external tools and APIs. Here's how to use this feature:
+This project implements Model Context Protocol (MCP) tool-calling with both Ollama and LM Studio, allowing language models to interact with external tools and APIs. Here's how to use this feature:
 
 ### Basic Usage
 
 ```typescript
-import { ollamaClient } from './server/ollama';
-import { enhanceOllamaWithMcp } from './server/ollama/ollamaMcpIntegration';
+import { getAIProvider } from './server/providers/providerFactory';
 
-// Enhance the Ollama client with MCP capabilities
-const mcpEnabledOllamaClient = enhanceOllamaWithMcp(ollamaClient);
+// Get the appropriate AI provider (Ollama or LM Studio)
+const aiProvider = await getAIProvider();
 
-// Use the enhanced client for chat
-const response = await mcpEnabledOllamaClient.chat({
-  model: 'llama3.2-vision:latest', // Or any function-calling compatible model
+// Use the provider for chat with MCP capabilities
+const response = await aiProvider.chat({
+  model: 'llama3:latest', // Or any function-calling compatible model
   messages: [
     { role: 'user', content: 'What is the current weather in San Francisco?' }
   ]
 });
+
+// You can also specify a provider explicitly
+const lmStudioProvider = await getAIProvider('lmstudio');
+const ollamaProvider = await getAIProvider('ollama');
 ```
 
 ### Controlling Tool Access
@@ -650,8 +689,8 @@ const response = await mcpEnabledOllamaClient.chat({
 You can specify which MCP tools should be enabled for a specific request:
 
 ```typescript
-const response = await mcpEnabledOllamaClient.chat({
-  model: 'llama3.2-vision:latest',
+const response = await aiProvider.chat({
+  model: 'llama3:latest',
   messages: [{ role: 'user', content: 'Show me my latest Oura ring data' }],
   enabledMcpTools: ['get_sleep_data', 'get_activity_data'] // Only enable specific tools
 });
@@ -662,8 +701,8 @@ const response = await mcpEnabledOllamaClient.chat({
 MCP tool calling also works with streaming responses:
 
 ```typescript
-const chatStream = mcpEnabledOllamaClient.streamingChat({
-  model: 'llama3.2-vision:latest',
+const chatStream = aiProvider.streamingChat({
+  model: 'llama3:latest',
   messages: [{ role: 'user', content: 'What were my sleep patterns last week?' }]
 });
 

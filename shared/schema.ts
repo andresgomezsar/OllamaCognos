@@ -189,9 +189,12 @@ export const externalData = pgTable("external_data", {
 export const settings = pgTable("settings", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().unique(),
-  ollamaUrl: text("ollama_url").notNull().default("http://localhost:11434"),
-  ollamaModel: text("ollama_model").notNull().default("qwen3:14b"),
-  ouraToken: text("oura_token"), // Encrypted
+  ollamaUrl: text("ollama_url").default("http://localhost:11434").notNull(),
+  ollamaModel: text("ollama_model").default("llama3").notNull(),
+  ouraToken: text("oura_token"),
+  lmStudioUrl: text("lmstudio_url").default("http://localhost:1234"),
+  lmStudioModel: text("lmstudio_model").default("default"),
+  enableLmStudio: boolean("enable_lmstudio").default(false),
   enabledMcpTools: jsonb("enabled_mcp_tools").default(["health-analysis", "memory-store", "web-search"]),
   healthDataSources: jsonb("health_data_sources").default({}),
   aiPreferences: jsonb("ai_preferences").default({}),

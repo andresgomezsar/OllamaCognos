@@ -4,10 +4,12 @@ import http from 'http';
 import axios from 'axios';
 
 import { ollamaClient, OllamaClient } from './ollama.js';
+import { lmStudioClient, LMStudioClient } from './lmstudio.js';
 import { OuraClient } from './oura.js';
 import { PerplexityClient } from './perplexity.js';
 import { OpenRouterClient } from './openrouter.js';
 import { GroqClient } from './groq.js';
+import { providerFactory, ProviderFactory } from './providerFactory.js';
 
 // Import MCP system directly from mcpRouter.ts to avoid any reexport issues
 import { mcpRouter, mcpRoutingService, initMcpServers } from './mcp/mcpRouter.js';
@@ -1063,18 +1065,41 @@ export function registerRoutes(app: express.Application) {
         }
       }
 
+      // Get LM Studio status (when using it as provider)
+      let lmStudioHealthy = false;
+      if (settings.enableLmStudio) {
+        try {
+          const lmStudioClient = new LMStudioClient(settings.lmStudioUrl || process.env.LMSTUDIO_URL);
+          lmStudioHealthy = await lmStudioClient.isHealthy();
+        } catch {
+          lmStudioHealthy = false;
+        }
+      }
+      
+      // Get the default provider
+      const defaultProvider = providerFactory.getDefaultProvider();
+      
       res.json({
         ai: {
-          provider: process.env.OPENROUTER_API_KEY ? 'openrouter' : 'ollama',
+          provider: process.env.OPENROUTER_API_KEY ? 'openrouter' : defaultProvider,
           status: process.env.OPENROUTER_API_KEY ? 
             (openRouterHealthy ? 'connected' : 'disconnected') :
-            (ollamaHealthy ? 'connected' : 'disconnected'),
-          model: process.env.OPENROUTER_API_KEY ? 'anthropic/claude-3.5-sonnet' : settings.ollamaModel
+            (defaultProvider === 'lmstudio' ? 
+              (lmStudioHealthy ? 'connected' : 'disconnected') : 
+              (ollamaHealthy ? 'connected' : 'disconnected')),
+          model: process.env.OPENROUTER_API_KEY ? 'anthropic/claude-3.5-sonnet' : 
+                 (defaultProvider === 'lmstudio' ? settings.lmStudioModel : settings.ollamaModel)
         },
         ollama: {
           status: ollamaHealthy ? 'connected' : 'disconnected',
           url: settings.ollamaUrl,
           model: settings.ollamaModel
+        },
+        lmstudio: {
+          status: lmStudioHealthy ? 'connected' : 'disconnected',
+          url: settings.lmStudioUrl || process.env.LMSTUDIO_URL || 'http://localhost:1234',
+          model: settings.lmStudioModel || 'default',
+          enabled: settings.enableLmStudio || false
         },
         oura: {
           status: ouraHealthy ? 'connected' : 'disconnected',
