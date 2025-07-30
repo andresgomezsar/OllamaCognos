@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { v4 as uuidv4 } from 'uuid';
+// uuid import removed as it's no longer needed
 import { z } from 'zod';
 import { isAuthenticated } from "../auth.js";
 import { createLimitlessMcpServer } from "./limitless/limitlessMcpServer.js";
@@ -7,6 +7,7 @@ import { createOuraMcpServer } from "./oura/ouraMcpServer.js";
 import { createBeeMcpServer } from "./bee/beeMcpServer.js";
 import { createCognosMcpServer } from "./cognos/cognosMcpServer.js";
 import { createLMStudioMcpServer } from "./lmstudio/lmstudioMcpServer.js";
+import { createOmiMcpServer } from "./omi/omiMcpServer.js";
 import { InMemoryTokenStore } from './auth/authProvider.js';
 import { SecurityMiddleware } from './auth/securityMiddleware.js';
 
@@ -83,7 +84,7 @@ export const mcpRoutingService = {
  * Determine which tools to enable based on the user message
  * In production, this would use NLP/LLM to analyze the message and select appropriate tools
  */
-function determineEnabledTools(userMessage: string, conversationContext: any[] = []): string[] {
+function determineEnabledTools(userMessage: string, _conversationContext: any[] = []): string[] {
   const message = userMessage.toLowerCase();
   const enabledTools: string[] = [];
   
@@ -267,11 +268,28 @@ export function initMcpServers() {
     const cognosMcpServer = createCognosMcpServer(pythonPath, cognosPipelinePath, mockClient);
     mcpServers['cognos'] = cognosMcpServer;
     console.log('Cognos MCP Server initialized!');
-    
-    console.log(`MCP servers initialized: ${Object.keys(mcpServers).join(', ')}`);
   } catch (error) {
-    console.error('Error initializing MCP servers:', error);
+    console.error('Failed to initialize Cognos MCP server:', error);
   }
+
+  try {
+    // Register the Omi MCP server if API key is available
+    if (process.env.OMI_API_KEY) {
+      console.log('Registering Omi MCP server');
+      const omiApiKey = process.env.OMI_API_KEY;
+      const omiBaseUrl = process.env.OMI_API_BASE_URL; // Optional
+      
+      const omiMcpServer = createOmiMcpServer(omiApiKey, omiBaseUrl);
+      mcpServers['omi'] = omiMcpServer;
+      console.log('Omi MCP Server initialized!');
+    } else {
+      console.log('Skipping Omi MCP Server initialization: OMI_API_KEY not found');
+    }
+  } catch (error) {
+    console.error('Failed to initialize Omi MCP server:', error);
+  }
+  
+  console.log(`MCP servers initialized: ${Object.keys(mcpServers).join(', ')}`);
   
   // In ESM modules, we can't directly import JSON files using static imports
   // So we'll skip the WebSocket dependency check for now
@@ -281,7 +299,7 @@ export function initMcpServers() {
 /**
  * Handle requests to list available MCP servers
  */
-router.get('/servers', (req: Request, res: Response) => {
+router.get('/servers', (_req: Request, res: Response) => {
   const servers = Object.keys(mcpServers).map(name => ({
     name,
     status: 'available',
@@ -479,8 +497,7 @@ router.post('/:server/call-tool-stream',
         'Connection': 'keep-alive'
       });
       
-      // Create unique request ID
-      const requestId = uuidv4();
+      // UUID generation removed as it was unused
       
       // Create event emitter-like handlers for streaming
       const emitter = {
@@ -530,7 +547,7 @@ router.post('/:server/call-tool-stream',
 // List available MCP tools (shortcut endpoint)
 // TODO: Re-enable authentication after testing
 // router.get('/tools', isAuthenticated, async (req: Request, res: Response) => {
-router.get('/tools', async (req: Request, res: Response) => {
+router.get('/tools', async (_req: Request, res: Response) => {
   try {
     const tools = [];
     
@@ -616,7 +633,7 @@ router.post('/execute', isAuthenticated, async (req: Request, res: Response) => 
  * Test endpoint for memory tools (DEVELOPMENT ONLY)
  * This endpoint runs the memory tools tests and returns the results
  */
-router.get('/test-memory-tools', async (req: Request, res: Response) => {
+router.get('/test-memory-tools', async (_req: Request, res: Response) => {
   console.log('Running memory tools test...');
   
   try {

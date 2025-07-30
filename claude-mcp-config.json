@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "omi": {
+      "command": "node",
+      "args": ["/Users/andresgomezsarmiento/Documents/GitHub/OllamaCognos/standalone-omi-mcp-server.js"],
+      "env": {
+        "OMI_API_KEY": "omi_mcp_b8fa06d24743d3689eb28cd232d70c71"
+      }
+    }
+  }
+}

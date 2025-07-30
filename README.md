@@ -19,6 +19,7 @@ An advanced AI assistant that integrates health data from Oura Ring, Bee transcr
 - [Health Data Processing](#health-data-processing)
 - [Deployment](#deployment)
 - [MCP and AI Model Integration](#mcp-and-ai-model-integration)
+- [Claude Desktop Integration](#claude-desktop-integration)
 - [Security Considerations](#security-considerations)
 - [Contributing](#contributing)
 - [License](#license)
@@ -36,6 +37,7 @@ An advanced AI assistant that integrates health data from Oura Ring, Bee transcr
 
 ### 🏥 Health Data & Knowledge Integration
 - **Oura Ring Sync**: Real-time sleep, activity, and readiness data
+- **Omi Memory**: AI-powered personal memory management and conversation tracking
 - **Bee Transcription**: Audio-to-text transcription for note-taking
 - **Limitless Notes**: Access to personal knowledge base and journal entries
 - **Health Analytics**: AI-powered insights from biometric data
@@ -46,6 +48,7 @@ An advanced AI assistant that integrates health data from Oura Ring, Bee transcr
 - **Web Search**: Real-time information retrieval
 - **Memory Store**: Persistent conversation context
 - **Health Analysis**: Specialized health data processing tools
+- **Omi Integration**: Personal memory and conversation management
 - **Transcription**: Audio file processing via Bee API
 - **Notes Integration**: Access personal knowledge via Limitless API
 - **Smart Routing**: Advanced context-aware tool selection
@@ -350,6 +353,7 @@ Create a `.env` file with:
 ```bash
 DATABASE_URL=postgresql://username:password@localhost:5432/cognos
 OURA_TOKEN=your_oura_ring_token
+OMI_API_KEY=your_omi_api_key  # For personal memory and conversation tracking
 OPENROUTER_API_KEY=your_openrouter_key  # Optional
 LIMITLESS_API_TOKEN=your_limitless_token  # Optional
 BEE_API_TOKEN=your_bee_token  # Optional
@@ -591,12 +595,12 @@ MCP (Model Context Protocol) provides a standardized interface for AI models to 
                            |  |             |  |            |  |            | |
                            |  +-------------+  +------------+  +------------+ |
                            |                                                  |
-                           |  +-------------+                                 |
-                           |  |             |                                 |
-                           |  | Cognos MCP  |                                 |
-                           |  | Server      |                                 |
-                           |  |             |                                 |
-                           |  +-------------+                                 |
+                           |  +-------------+  +------------+                 |
+                           |  |             |  |            |                 |
+                           |  | Cognos MCP  |  | Omi MCP    |                 |
+                           |  | Server      |  | Server     |                 |
+                           |  |             |  |            |                 |
+                           |  +-------------+  +------------+                 |
                            |                                                  |
                            +--------------------------------------------------+
 ```
@@ -619,13 +623,81 @@ MCP (Model Context Protocol) provides a standardized interface for AI models to 
 
 - **mcpRouter**: Central routing service that directs requests to appropriate MCP servers
 - **mcpSchemaValidator**: Ensures requests and responses follow schema standards
-- **MCP Servers**: Individual servers for each integrated service (Oura, Bee, Limitless)
+- **MCP Servers**: Individual servers for each integrated service (Oura, Bee, Limitless, Omi)
 - **Tool Definitions**: Structured descriptions of available functions for each service
 
 ### Supported AI Providers
 - **Ollama**: Local AI with function calling support
 - **LM Studio**: Local AI with native MCP support (v0.3.17+)
 - **OpenRouter**: Cloud-based models with advanced reasoning
+
+## Claude Desktop Integration
+
+### Omi MCP Server for Claude Desktop
+
+OllamaCognos includes a standalone Omi MCP server that can be used directly with Claude Desktop to access your personal memories and conversations.
+
+#### Features
+- **Memory Management**: Access and create personal memories stored in Omi
+- **Conversation Tracking**: Retrieve conversation history and transcripts
+- **Real-time Data**: Direct connection to your Omi API for up-to-date information
+- **Seamless Integration**: Works natively with Claude Desktop's MCP protocol
+
+#### Setup Instructions
+
+1. **Configure Environment**
+   ```bash
+   export OMI_API_KEY="your_omi_api_key"
+   ```
+
+2. **Update Claude Desktop Config**
+   
+   Edit your Claude Desktop configuration file:
+   - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+   - **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+
+   Add this configuration:
+   ```json
+   {
+     "mcpServers": {
+       "omi": {
+         "command": "/path/to/OllamaCognos/run-omi-mcp.sh"
+       }
+     }
+   }
+   ```
+
+3. **Restart Claude Desktop** to load the new MCP server
+
+#### Available Tools in Claude Desktop
+
+- **`get_memories`**: Retrieve your personal memories with filtering options
+- **`create_memory`**: Add new memories to your Omi account
+- **`get_conversations`**: List conversation metadata and summaries  
+- **`get_conversation_by_id`**: Get full conversation transcripts
+
+#### Usage Examples
+
+Once configured, you can ask Claude Desktop:
+
+```
+What memories do I have about AI or technology?
+```
+
+```
+Show me my conversations from yesterday
+```
+
+```
+Create a memory about our discussion on health tracking
+```
+
+#### Files Included
+- `standalone-omi-mcp-server.js`: The standalone MCP server
+- `run-omi-mcp.sh`: Wrapper script for easy execution
+- `claude-omi-setup.md`: Detailed setup instructions
+
+For complete setup instructions, see [claude-omi-setup.md](claude-omi-setup.md).
 
 ## Troubleshooting
 
