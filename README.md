@@ -8,6 +8,10 @@
 
 An advanced AI assistant that integrates health data from Oura Ring, Bee transcriptions, and Limitless notes with local LLMs (via Ollama or LM Studio) and cloud AI providers for comprehensive AI-powered health insights and analysis.
 
+![OllamaCognos dashboard showing wearable health metrics, local AI status, and MCP tools](docs/images/ollamacognos-dashboard.jpg)
+
+*OllamaCognos is one of the demo apps built for Cognos developer tools, exploring how voice, AI memory, and health wearables can work together.*
+
 ## Table of Contents
 
 - [Features](#features)
